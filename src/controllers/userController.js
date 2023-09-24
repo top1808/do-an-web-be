@@ -5,9 +5,9 @@ const userController = {
     getAll: async ( req, res, next) => {
         try {
             const users = await User.find();
-            res.status(200).json(users);
+            res.status(200).send({users});
         } catch (err) {
-            res.status(500).json(err);
+            res.status(500).send(err);
         }
     },
     //deleteUser
@@ -15,9 +15,9 @@ const userController = {
         try {
             const user = await User.findById(req.params.id);
             user.deleteOne();
-            res.status(200).json("Delete user successfully.");
+            res.status(200).send({message: "Delete user successfully."});
         } catch (err) {
-            res.status(500).json(err);
+            res.status(500).send(err);
         }
     }
 }
