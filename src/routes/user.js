@@ -4,6 +4,7 @@ const middlewareController = require('../controllers/middlewareController');
 const router = require('express').Router();
 
 router.get('/', middlewareController.verifyToken, userController.getAll);
-router.delete('/:id', userController.deleteUser);
+router.post('/create', middlewareController.verifyToken, userController.createUser);
+router.delete('/:id',  middlewareController.verifyToken, userController.deleteUser);
 
 module.exports = router;

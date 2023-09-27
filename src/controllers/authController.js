@@ -2,7 +2,6 @@ const bcrypt = require('bcrypt');
 const User = require('../db/models/User');
 const jwt = require('jsonwebtoken');
 const RefreshToken = require('../db/models/RefreshToken');
-const generateUid = require('../utils/functionHelper');
 
 const authController = {
     //GENERATE TOKEN
@@ -108,7 +107,7 @@ const authController = {
 
     //LOGOUT
     logout: async (req, res) => {
-        res.clearCookie("refreshToken");
+        res.cookie("refreshToken", "");
         const refreshToken = await RefreshToken.findOne({token: req.cookies.refreshToken});
         await refreshToken.deleteOne();
         
