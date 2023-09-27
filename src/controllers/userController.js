@@ -1,4 +1,5 @@
 const User = require("../db/models/User");
+const bcrypt = require('bcrypt');
 
 const userController = {
     //getAllUser
@@ -19,7 +20,25 @@ const userController = {
         } catch (err) {
             res.status(500).send(err);
         }
-    }
+    },
+     //createUser
+     createUser: async (req, res) => {
+        try {
+            const salt = await bcrypt.genSalt(10);
+            const hashed = await bcrypt.hash(req.body.password, salt);
+
+            const newUser = new User({
+                ...req.body,
+                password: hashed,
+            })
+
+            const user = await newUser.save();
+
+            res.status(200).send({user, message: "Create user successful."});
+        } catch (err) {
+            res.status(500).send(err);
+        }
+    },
 }
 
 module.exports = userController;
