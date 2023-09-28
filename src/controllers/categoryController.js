@@ -2,7 +2,7 @@ const Category = require("../db/models/Category");
 
 const categoryController = {
     //getAll
-    getAll: async ( req, res, next) => {
+    getAll: async (req, res) => {
         try {
             const categories = await Category.find();
             res.status(200).send({categories});
@@ -11,7 +11,7 @@ const categoryController = {
         }
     },
     //delete
-    delete: async (req, res, next) => {
+    delete: async (req, res) => {
         try {
             const category = await Category.findById(req.params.id);
             category.deleteOne();
@@ -26,7 +26,7 @@ const categoryController = {
             const newCategory = new Category(req.body)
             await newCategory.save();
 
-            res.status(200).send({ message: "Create user successful."});
+            res.status(200).send({ message: "Create category successfully."});
         } catch (err) {
             res.status(500).send(err);
         }

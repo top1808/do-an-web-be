@@ -3,8 +3,8 @@ const middlewareController = require('../controllers/middlewareController');
 
 const router = require('express').Router();
 
-router.get('/', middlewareController.verifyToken, categoryController.getAll);
-router.post('/create', middlewareController.verifyToken, categoryController.create);
-router.delete('/:id',  middlewareController.verifyToken, categoryController.delete);
+router.get('/', categoryController.getAll);
+router.post('/create', categoryController.create);
+router.delete('/:id',  categoryController.delete);
 
 module.exports = router;

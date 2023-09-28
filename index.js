@@ -9,6 +9,7 @@ const cookieParser = require('cookie-parser');
 const authRoute = require('./src/routes/auth');
 const userRoute = require('./src/routes/user');
 const categoryRoute = require('./src/routes/category');
+const productRoute = require('./src/routes/product');
 
 require('dotenv').config();
 
@@ -30,6 +31,7 @@ app.use(bodyParser.urlencoded({extended: true, limit: '30mb'}));
 app.use('/v1/auth', authRoute);
 app.use('/v1/user', userRoute);
 app.use('/v1/category', categoryRoute);
+app.use('/v1/product', productRoute);
 
 app.listen(process.env.PORT, function () {
     console.log("Starting at port 8000...");
