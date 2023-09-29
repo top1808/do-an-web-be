@@ -18,10 +18,6 @@ const categorySchema = new Schema({
         type: Boolean,
         default: true,
     },
-    products: [{
-        type: Schema.Types.ObjectId,
-        ref: 'Product',
-    }]
 }, { timestamps: true});
 
 module.exports = mongoose.model('Category', categorySchema);

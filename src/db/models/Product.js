@@ -14,9 +14,6 @@ const productSchema = new Schema({
         type: Number,
         required: true,
     },
-    category_ids: {
-        type: Array,
-    },
     description: {
         type: String,
     },
@@ -24,10 +21,16 @@ const productSchema = new Schema({
         type: Boolean,
         default: true,
     },
-    // catego: [{
-    //     type: Schema.Types.ObjectId,
-    //     ref: 'Category',
-    // }]
+    categoryIds: [{
+        type: Schema.Types.ObjectId,
+        ref: 'Category',
+    }],
 }, { timestamps: true});
+
+productSchema.virtual('categoryList', {
+    ref: 'Category',
+    localField: "categoryIds",
+    foreignField: '_id',
+})
 
 module.exports = mongoose.model('Product', productSchema);
