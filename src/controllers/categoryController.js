@@ -1,4 +1,5 @@
 const Category = require("../db/models/Category");
+const Product = require("../db/models/Product");
 
 const categoryController = {
     //getAll
@@ -14,7 +15,8 @@ const categoryController = {
     delete: async (req, res) => {
         try {
             const category = await Category.findById(req.params.id);
-            category.deleteOne();
+            await category.deleteOne();
+            await Product.deleteMany({ categoryIds: req.params.id })
             res.status(200).send({message: "Delete category successfully."});
         } catch (err) {
             res.status(500).send(err);
