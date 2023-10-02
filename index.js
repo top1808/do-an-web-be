@@ -10,6 +10,7 @@ const authRoute = require('./src/routes/auth');
 const userRoute = require('./src/routes/user');
 const categoryRoute = require('./src/routes/category');
 const productRoute = require('./src/routes/product');
+const middlewareController = require('./src/controllers/middlewareController');
 
 require('dotenv').config();
 
@@ -29,6 +30,9 @@ app.use(bodyParser.urlencoded({extended: true, limit: '30mb'}));
 
 // Website routes
 app.use('/v1/auth', authRoute);
+
+app.use(middlewareController.verifyToken, middlewareController.checkRole);
+
 app.use('/v1/user', userRoute);
 app.use('/v1/category', categoryRoute);
 app.use('/v1/product', productRoute);
