@@ -3,8 +3,8 @@ const middlewareController = require('../controllers/middlewareController');
 
 const router = require('express').Router();
 
-router.get('/', middlewareController.verifyToken, userController.getAll);
-router.post('/create', middlewareController.verifyToken, userController.createUser);
-router.delete('/:id',  middlewareController.verifyToken, userController.deleteUser);
+router.get('/', userController.getAll);
+router.post('/create', userController.createUser);
+router.delete('/:id',  userController.deleteUser);
 
 module.exports = router;
