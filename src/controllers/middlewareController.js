@@ -9,12 +9,11 @@ const middlewareController = {
                 if (err) {
                     return res.status(403).send({message: "Token is invalid."})
                 }
-                req.user = user;
+                req.user = user.user;
                 next();
             })
         } else {
             res.status(401).send({message: "You are not authenticated."})
-
         }
     },
     checkRole: async (req, res, next) => {
