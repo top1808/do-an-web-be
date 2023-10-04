@@ -8,7 +8,7 @@ const authController = {
     generateAccessToken: (user) => {
         return jwt.sign(
             {
-                user: user,
+                id: user.id,
             },
             process.env.JWT_ACCESS_KEY,
             {expiresIn: "30s"}
@@ -17,7 +17,7 @@ const authController = {
     generateRefreshToken: (user) => {
         return jwt.sign(
             {
-                user: user,
+                id: user.id,
             },
             process.env.JWT_REFRESH_KEY,
             {expiresIn: "1d"}
@@ -55,8 +55,8 @@ const authController = {
             }
 
             const {password, username, ...rest} = user._doc;
-            const accessToken = authController.generateAccessToken(user._doc);
-            const refreshToken = authController.generateRefreshToken(user._doc);
+            const accessToken = authController.generateAccessToken(user);
+            const refreshToken = authController.generateRefreshToken(user);
             const newRefreshToken = new RefreshToken({token: refreshToken});
             await newRefreshToken.save();
 
@@ -87,8 +87,8 @@ const authController = {
 
             checkRefreshToken.deleteOne();
 
-            const newAccessToken = authController.generateAccessToken(user.user);
-            const newRefreshToken = authController.generateRefreshToken(user.user);
+            const newAccessToken = authController.generateAccessToken(user);
+            const newRefreshToken = authController.generateRefreshToken(user);
 
             const saveRefreshToken = new RefreshToken({token: newRefreshToken});
             await saveRefreshToken.save();

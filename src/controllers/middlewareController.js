@@ -9,7 +9,7 @@ const middlewareController = {
                 if (err) {
                     return res.status(403).send({message: "Token is invalid."})
                 }
-                req.user = user.user;
+                req.user = user;
                 next();
             })
         } else {
