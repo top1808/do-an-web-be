@@ -14,7 +14,6 @@ const middlewareController = {
             })
         } else {
             res.status(401).send({message: "You are not authenticated."})
-
         }
     },
     checkRole: async (req, res, next) => {
