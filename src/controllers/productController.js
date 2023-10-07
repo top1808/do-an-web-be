@@ -1,5 +1,5 @@
-const Category = require("../db/models/Category");
-const Product = require("../db/models/Product");
+const Category = require("../models/Category");
+const Product = require("../models/Product");
 
 const productController = {
     //getAll

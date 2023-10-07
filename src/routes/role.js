@@ -1,12 +1,12 @@
 const roleController = require('../controllers/roleController');
-// const middlewareController = require('../controllers/middlewareController');
 
-const router = require('express').Router();
+const roleRoute = require('express').Router();
 
-router.get('/permission', roleController.getPermission);
-router.post('/permission/create', roleController.createPermission);
-router.get('/role', roleController.getRole);
-router.post('/role/create', roleController.createRole);
-router.put('/role/give-permission/:id', roleController.givePermissionForRole);
+roleRoute.get('/permission', roleController.getPermission);
+roleRoute.post('/permission/create', roleController.createPermission);
 
-module.exports = router;
+roleRoute.get('/role', roleController.getRole);
+roleRoute.post('/role/create', roleController.createRole);
+roleRoute.post('/role/give-permission', roleController.givePermissionForRole);
+
+module.exports = roleRoute;

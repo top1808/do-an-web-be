@@ -1,10 +1,9 @@
 const categoryController = require('../controllers/categoryController');
-const middlewareController = require('../controllers/middlewareController');
 
-const router = require('express').Router();
+const categoryRoute = require('express').Router();
 
-router.get('/', categoryController.getAll);
-router.post('/create', categoryController.create);
-router.delete('/:id',  categoryController.delete);
+categoryRoute.get('/', categoryController.getAll);
+categoryRoute.post('/create', categoryController.create);
+categoryRoute.delete('/:id',  categoryController.delete);
 
-module.exports = router;
+module.exports = categoryRoute;
