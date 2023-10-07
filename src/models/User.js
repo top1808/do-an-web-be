@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { validateEmail } = require('../../utils/regex');
+const { validateEmail } = require('../utils/regex');
 
 const userSchema = new mongoose.Schema({
     username: {
@@ -24,9 +24,16 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    role: {
-        type: String,
+    roleId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Role',
     }
 }, { timestamps: true});
+
+userSchema.virtual('rId', {
+    ref: 'Role',
+    localField: "roleId",
+    foreignField: '_id',
+})
 
 module.exports = mongoose.model('User', userSchema);

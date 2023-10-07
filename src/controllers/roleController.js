@@ -1,5 +1,6 @@
-const Permission = require("../db/models/Permission");
-const Role = require("../db/models/Role");
+const Permission = require("../models/Permission");
+const Role = require("../models/Role");
+const RolePermission = require("../models/RolePermission");
 
 const roleController = {
   getPermission: async (req, res) => {
@@ -22,7 +23,16 @@ const roleController = {
   },
   getRole: async (req, res) => {
     try {
-      const roles = await Role.find();
+      let roles = await Role.find();
+      roles = await Promise.all(
+        roles.map(async (role) => {
+          const permissions = await RolePermission.find({ roleId: role._id });
+          return {
+            ...role.toObject(),
+            permissionIds: permissions.map(p => p.permissionId),
+          };
+        })
+      );
       res.status(200).send({ roles });
     } catch (err) {
       res.status(500).send(err);
@@ -40,18 +50,19 @@ const roleController = {
   },
   givePermissionForRole: async (req, res) => {
     try {
-      const role = await Role.findById(req.params.id);
+      const role = await Role.findById(req.body.roleId);
+      if (!role) return res.status(404).send({ message: "Role not found." });
 
-      const findPermission = role.permissionIds.includes(req.body.permissionId);
+      const permissionOfRole = await RolePermission.findOne({
+        roleId: req.body.roleId,
+        permissionId: req.body.permissionId,
+      });
 
-      if (findPermission) {
-        await Role.updateOne(
-          { _id: req.params.id },
-          { $pull: { permissionIds: req.body.permissionId } }
-        );
+      if (!permissionOfRole) {
+        const newRolePermission = new RolePermission(req.body);
+        await newRolePermission.save();
       } else {
-        role.permissionIds.push(req.body.permissionId);
-        await role.save();
+        await permissionOfRole.deleteOne();
       }
 
       res.status(200).send({ message: "Change permission successfully." });
