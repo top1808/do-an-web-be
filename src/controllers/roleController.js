@@ -1,6 +1,7 @@
 const Permission = require("../models/Permission");
 const Role = require("../models/Role");
 const RolePermission = require("../models/RolePermission");
+const User = require("../models/User");
 
 const roleController = {
   getPermission: async (req, res) => {
@@ -29,7 +30,7 @@ const roleController = {
           const permissions = await RolePermission.find({ roleId: role._id });
           return {
             ...role.toObject(),
-            permissionIds: permissions.map(p => p.permissionId),
+            permissionIds: permissions.map((p) => p.permissionId),
           };
         })
       );
@@ -66,6 +67,58 @@ const roleController = {
       }
 
       res.status(200).send({ message: "Change permission successfully." });
+    } catch (err) {
+      res.status(500).send(err);
+    }
+  },
+  checkPermisson: async (req, res) => {
+    try {
+      const permissions = await Permission.find({ url: req.body.url });
+
+      let canView = !permissions.find(p => p.method === "get");
+      let canCreate = !permissions.find(p => p.method === "post");
+      let canEdit = !permissions.find(p => p.method === "put");
+      let canDelete = !permissions.find(p => p.method === "delete");
+
+      const user = await User.findById(req.user.id);
+      const userPermissions = await RolePermission.find({
+        roleId: user.roleId,
+      });
+
+      for (const userPermission of userPermissions) {
+        const findPermission = permissions.find(p => p._id.toString() === userPermission.permissionId.toString());
+        if (findPermission) {
+          switch (findPermission.method) {
+            case "get": {
+              canView = true;
+              break;
+            }
+            case "post": {
+              canCreate = true;
+              break;
+            }
+            case "put": {
+              canEdit = true;
+              break;
+            }
+            case "delete": {
+              canDelete = true;
+              break;
+            }
+            default: break;
+          }
+        }
+      }
+
+      res
+        .status(200)
+        .send({
+          url: req.body.url,
+          canView: canView,
+          canCreate: canCreate,
+          canEdit: canEdit,
+          canDelete: canDelete,
+        });
     } catch (err) {
       res.status(500).send(err);
     }
