@@ -24,7 +24,7 @@ const middlewareController = {
     try {
       const method = req.method.toLowerCase();
       const userId = req.user?.id;
-      const url = req.url.replace("/v1", "");
+      const url = "/" + req.url.split("/")[2];
       const permission = await Permission.findOne({ method: method, url: url });
       if (!permission) return next();
       const user = await User.findById(userId);
