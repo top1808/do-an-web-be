@@ -4,9 +4,24 @@ const RolePermission = require("../models/RolePermission");
 const User = require("../models/User");
 
 const roleController = {
+  getRoles: async () => {
+    let roles = await Role.find();
+    roles = await Promise.all(
+      roles.map(async (role) => {
+        const permissions = await RolePermission.find({ roleId: role._id });
+        return {
+          ...role.toObject(),
+          permissionIds: permissions.map((p) => p.permissionId),
+        };
+      })
+    );
+    return roles;
+  },
   getPermission: async (req, res) => {
     try {
+      const order = { 'get': 1, 'post': 2, 'put': 3, 'delete': 4 };
       const permissions = await Permission.find();
+      permissions.sort((a, b) => order[a.method] - order[b.method]);
       res.status(200).send({ permissions });
     } catch (err) {
       res.status(500).send(err);
@@ -24,16 +39,7 @@ const roleController = {
   },
   getRole: async (req, res) => {
     try {
-      let roles = await Role.find();
-      roles = await Promise.all(
-        roles.map(async (role) => {
-          const permissions = await RolePermission.find({ roleId: role._id });
-          return {
-            ...role.toObject(),
-            permissionIds: permissions.map((p) => p.permissionId),
-          };
-        })
-      );
+      const roles = await roleController.getRoles();
       res.status(200).send({ roles });
     } catch (err) {
       res.status(500).send(err);
@@ -54,19 +60,28 @@ const roleController = {
       const role = await Role.findById(req.body.roleId);
       if (!role) return res.status(404).send({ message: "Role not found." });
 
-      const permissionOfRole = await RolePermission.findOne({
-        roleId: req.body.roleId,
-        permissionId: req.body.permissionId,
-      });
-
-      if (!permissionOfRole) {
-        const newRolePermission = new RolePermission(req.body);
-        await newRolePermission.save();
-      } else {
-        await permissionOfRole.deleteOne();
+      for (const permissionId of req.body.permissionIds) {
+        const permissionOfRole = await RolePermission.findOne({
+          roleId: req.body.roleId,
+          permissionId: permissionId,
+        });
+  
+        if (!permissionOfRole) {
+          const newRolePermission = new RolePermission({
+            roleId: req.body.roleId,
+            permissionId: permissionId,
+          });
+          await newRolePermission.save();
+        } else {
+          await permissionOfRole.deleteOne();
+        }
       }
 
-      res.status(200).send({ message: "Change permission successfully." });
+      const roles = await roleController.getRoles();
+
+      res
+        .status(200)
+        .send({ message: "Change permission successfully.", data: roles });
     } catch (err) {
       res.status(500).send(err);
     }
@@ -75,10 +90,10 @@ const roleController = {
     try {
       const permissions = await Permission.find({ url: req.body.url });
 
-      let canView = !permissions.find(p => p.method === "get");
-      let canCreate = !permissions.find(p => p.method === "post");
-      let canEdit = !permissions.find(p => p.method === "put");
-      let canDelete = !permissions.find(p => p.method === "delete");
+      let canView = !permissions.find((p) => p.method === "get");
+      let canCreate = !permissions.find((p) => p.method === "post");
+      let canEdit = !permissions.find((p) => p.method === "put");
+      let canDelete = !permissions.find((p) => p.method === "delete");
 
       const user = await User.findById(req.user.id);
       const userPermissions = await RolePermission.find({
@@ -86,7 +101,9 @@ const roleController = {
       });
 
       for (const userPermission of userPermissions) {
-        const findPermission = permissions.find(p => p._id.toString() === userPermission.permissionId.toString());
+        const findPermission = permissions.find(
+          (p) => p._id.toString() === userPermission.permissionId.toString()
+        );
         if (findPermission) {
           switch (findPermission.method) {
             case "get": {
@@ -105,20 +122,19 @@ const roleController = {
               canDelete = true;
               break;
             }
-            default: break;
+            default:
+              break;
           }
         }
       }
 
-      res
-        .status(200)
-        .send({
-          url: req.body.url,
-          canView: canView,
-          canCreate: canCreate,
-          canEdit: canEdit,
-          canDelete: canDelete,
-        });
+      res.status(200).send({
+        url: req.body.url,
+        canView: canView,
+        canCreate: canCreate,
+        canEdit: canEdit,
+        canDelete: canDelete,
+      });
     } catch (err) {
       res.status(500).send(err);
     }
