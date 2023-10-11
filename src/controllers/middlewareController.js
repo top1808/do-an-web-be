@@ -23,7 +23,7 @@ const middlewareController = {
   checkPermission: async (req, res, next) => {
     try {
       const method = req.method.toLowerCase();
-      const userId = req.user?.id;
+      const userId = req.user?._id;
       const url = "/" + req.url.split("/")[2];
       const permission = await Permission.findOne({ method: method, url: url });
       if (!permission) return next();

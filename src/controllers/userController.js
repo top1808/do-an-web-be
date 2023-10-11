@@ -1,3 +1,4 @@
+const RefreshToken = require("../models/RefreshToken");
 const User = require("../models/User");
 const bcrypt = require("bcrypt");
 
@@ -15,7 +16,12 @@ const userController = {
   deleteUser: async (req, res, next) => {
     try {
       const user = await User.findById(req.params.id);
-      user.deleteOne();
+      const refreshToken = await RefreshToken.findOne({
+        userId: user._id,
+      });
+      if (refreshToken) await refreshToken.deleteOne();
+      
+      await user.deleteOne();
       res.status(200).send({ message: "Delete user successfully." });
     } catch (err) {
       res.status(500).send(err);

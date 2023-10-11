@@ -4,13 +4,8 @@ const bodyParser = require("body-parser");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const database = require("./src/config/database");
-
-const authRoute = require("./src/routes/auth");
-const roleRoute = require("./src/routes/role");
-const userRoute = require("./src/routes/user");
-const categoryRoute = require("./src/routes/category");
-const productRoute = require("./src/routes/product");
-const middlewareController = require("./src/controllers/middlewareController");
+const adminRoutes = require("./src/app/admin");
+const customerRoutes = require("./src/app/customer");
 
 require("dotenv").config();
 
@@ -30,15 +25,10 @@ app.use(bodyParser.json({ limit: "30mb" }));
 app.use(bodyParser.urlencoded({ extended: true, limit: "30mb" }));
 
 // Website routes
-app.use("/v1/auth", authRoute);
 
-app.use(middlewareController.verifyToken);
-app.use(middlewareController.checkPermission);
+app.use('/v1', adminRoutes)
+app.use('/v2', customerRoutes)
 
-app.use("/v1/authorize", roleRoute);
-app.use("/v1/user", userRoute);
-app.use("/v1/category", categoryRoute);
-app.use("/v1/product", productRoute);
 
 app.listen(process.env.PORT, function () {
   console.log("Starting at port 8000...");
