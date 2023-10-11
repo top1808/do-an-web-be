@@ -2,6 +2,7 @@ const Category = require("../models/Category");
 const Product = require("../models/Product");
 
 const categoryController = {
+    //admin api
     //getAll
     getAll: async (req, res) => {
         try {
@@ -23,7 +24,7 @@ const categoryController = {
         }
     },
      //create
-     create: async (req, res) => {
+    create: async (req, res) => {
         try {
             const newCategory = new Category(req.body)
             await newCategory.save();
@@ -33,6 +34,28 @@ const categoryController = {
             res.status(500).send(err);
         }
     },
+    edit: async (req, res) => {
+        try {
+            res.status(200).send({ message: "Edit category successfully."});
+        } catch (err) {
+            res.status(500).send(err);
+        }
+    },
+
+    //customer api
+    getCategories: async (req, res) => {
+        try {
+            const query = req.query;
+            const skip = query?.skip || 0;
+            const limit = query?.limit || 20;
+            const categories = await Category.find().skip(skip).limit(limit);
+
+            res.status(200).send({ categories });
+        } catch (err) {
+            res.status(500).send(err);
+        }
+    }
+    
 }
 
 module.exports = categoryController;

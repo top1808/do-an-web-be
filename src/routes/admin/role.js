@@ -1,5 +1,5 @@
-const middlewareController = require('../controllers/middlewareController');
-const roleController = require('../controllers/roleController');
+const middlewareController = require('../../controllers/middlewareController');
+const roleController = require('../../controllers/roleController');
 
 const roleRoute = require('express').Router();
 

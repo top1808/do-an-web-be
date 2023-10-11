@@ -15,7 +15,7 @@ const categorySchema = new Schema({
         type: String,
     },
     status: {
-        type: Boolean,
+        type: String,
         default: true,
     },
 }, { timestamps: true});

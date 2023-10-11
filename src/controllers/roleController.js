@@ -95,7 +95,7 @@ const roleController = {
       let canEdit = !permissions.find((p) => p.method === "put");
       let canDelete = !permissions.find((p) => p.method === "delete");
 
-      const user = await User.findById(req.user.id);
+      const user = await User.findById(req.user._id);
       const userPermissions = await RolePermission.find({
         roleId: user.roleId,
       });
