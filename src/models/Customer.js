@@ -1,11 +1,15 @@
 const mongoose = require('mongoose');
 const { validateEmail } = require('../utils/regex');
 
-const userSchema = new mongoose.Schema({
+const customerSchema = new mongoose.Schema({
+    id: {
+        type: String,
+        unique: true,
+    },
     username: {
         type: String,
-        required: true,
-        unique: true
+        unique: true,
+        min: 6,
     },
     name: {
         type: String,
@@ -16,7 +20,6 @@ const userSchema = new mongoose.Schema({
         trim: true,
         lowercase: true,
         unique: true,
-        required: true,
         validate: [validateEmail, 'Please fill a valid email address'],
         match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, 'Please fill a valid email address']
     },
@@ -24,19 +27,24 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    birthday: {
+        type: String,
+        default: "",
+    },
+    address: {
+        type: String,
+        default: "",
+    },
     image: {
         type: String,
+        default: "",
     },
-    roleId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Role',
+    phoneNumber: {
+        type: String,
+        max: 10,
+        default: "",
     }
 }, { timestamps: true});
 
-userSchema.virtual('rId', {
-    ref: 'Role',
-    localField: "roleId",
-    foreignField: '_id',
-})
 
-module.exports = mongoose.model('User', userSchema);
+module.exports = mongoose.model('Customer', customerSchema);
