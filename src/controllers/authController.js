@@ -3,6 +3,8 @@ const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 const RefreshToken = require("../models/RefreshToken");
 const Role = require("../models/Role");
+const Customer = require("../models/Customer");
+const { generateID } = require("../utils/functionHelper");
 
 const authController = {
   //GENERATE TOKEN
@@ -128,6 +130,58 @@ const authController = {
     });
     await refreshToken.deleteOne();
     res.cookie("refreshToken", "");
+
+    res.status(200).send({ message: "Logout successfully." });
+  },
+
+  /**************
+   * CUSTOMER *
+   **************/
+  registerCustomer: async (req, res) => {
+    try {
+      const password = req.body?.password ? req.body.password : "123456";
+      const salt = await bcrypt.genSalt(10);
+      const hashed = await bcrypt.hash(password, salt);
+
+      const newCustomer = new Customer({
+        ...req.body,
+        password: hashed,
+        id: req.body?.id ? req.body.id : generateID(),
+      });
+      await newCustomer.save();
+
+      res.status(200).send({ message: "Register successfully." });
+    } catch (err) {
+      res.status(500).send({ err });
+    }
+  },
+
+  loginCustomer: async (req, res) => {
+    try {
+      const customer = await Customer.findOne({ username: req.body.username });
+      if (!customer) {
+        return res.status(404).send({ message: "Username is wrong." });
+      }
+
+      const checkPass = await bcrypt.compare(
+        req.body.password,
+        customer.password
+      );
+      if (!checkPass) {
+        return res.status(404).send({ message: "Password is wrong." });
+      }
+
+      const { password, username, ...rest } = customer._doc;
+      const accessToken = authController.generateAccessToken(customer);
+
+      res.status(200).send({ ...rest, accessToken });
+    } catch (err) {
+      res.status(500).send(err);
+    }
+  },
+
+  logoutCustomer: async (req, res) => {
+    res.cookie("refreshTokenUser", "");
 
     res.status(200).send({ message: "Logout successfully." });
   },
