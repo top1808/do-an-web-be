@@ -20,7 +20,7 @@ const userController = {
         userId: user._id,
       });
       if (refreshToken) await refreshToken.deleteOne();
-      
+
       await user.deleteOne();
       res.status(200).send({ message: "Delete user successfully." });
     } catch (err) {
