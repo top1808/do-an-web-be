@@ -54,7 +54,35 @@ const categoryController = {
         } catch (err) {
             res.status(500).send(err);
         }
-    }
+    },
+
+    getCategoryInfo: async (req, res) => {
+        try {
+          const category = await Category.findById(req.params.id);
+    
+          res.status(200).send({ category });
+        } catch (err) {
+          res.status(500).send(err);
+        }
+      },
+    
+      editCategory: async (req, res) => {
+        try {
+          const updateField = req.body;
+    
+          const newCategory = await Category.updateOne(
+            {
+              _id: req.params.id,
+            },
+            {
+              $set: updateField,
+            }
+          );
+          res.status(200).send({ newCategory, message: "Update category successful." });
+        } catch (err) {
+          res.status(500).send(err);
+        }
+      },
     
 }
 
