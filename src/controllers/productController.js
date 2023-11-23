@@ -48,6 +48,34 @@ const productController = {
       res.status(500).send(err);
     }
   },
+
+  getProductInfo: async (req, res) => {
+    try {
+      const product = await Product.findById(req.params.id);
+
+      res.status(200).send({ product });
+    } catch (err) {
+      res.status(500).send(err);
+    }
+  },
+
+  editProduct: async (req, res) => {
+    try {
+      const updateField = req.body;
+
+      const newProduct = await Product.updateOne(
+        {
+          _id: req.params.id,
+        },
+        {
+          $set: updateField,
+        }
+      );
+      res.status(200).send({ newProduct, message: "Update product successful." });
+    } catch (err) {
+      res.status(500).send(err);
+    }
+  },
 };
 
 module.exports = productController;

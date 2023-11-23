@@ -6,8 +6,14 @@ const userController = {
   //getAllUser
   getAll: async (req, res, next) => {
     try {
-      const users = await User.find();
-      res.status(200).send({ users });
+      const query = req.query;
+      const offset = Number(query?.offset) || 0;
+      const limit = Number(query?.limit) || 20;
+
+      const users = await User.find().skip(offset).limit(limit);
+      const total = await User.find().count();
+
+      res.status(200).send({ users, total, offset, limit });
     } catch (err) {
       res.status(500).send(err);
     }
@@ -49,7 +55,33 @@ const userController = {
     try {
       const user = await User.findById(req.params.id);
 
-      res.status(200).send({ user });
+      const { password, ...rest } = user._doc;
+
+      res.status(200).send({ user: rest });
+    } catch (err) {
+      res.status(500).send(err);
+    }
+  },
+  editUser: async (req, res) => {
+    try {
+      const salt = await bcrypt.genSalt(10);
+      const hashed = "";
+      if (req.body.password) {
+        hashed = await bcrypt.hash(req.body.password, salt);
+      }
+
+      const updateField = { ...req.body, password: hashed };
+      if (!hashed) delete updateField.password;
+
+      const newUser = await User.updateOne(
+        {
+          _id: req.params.id,
+        },
+        {
+          $set: updateField,
+        }
+      );
+      res.status(200).send({ newUser, message: "Update user successful." });
     } catch (err) {
       res.status(500).send(err);
     }
