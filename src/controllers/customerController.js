@@ -1,13 +1,19 @@
 const Customer = require("../models/Customer");
-const RefreshToken = require("../models/RefreshToken");
 const bcrypt = require("bcrypt");
+const { generateID } = require("../utils/functionHelper");
 
 const customerController = {
-  //getAllUser
+  //getAll
   getAll: async (req, res, next) => {
     try {
-      const customers = await Customer.find();
-      res.status(200).send({ customers });
+      const query = req.query;
+      const offset = Number(query?.offset) || 0;
+      const limit = Number(query?.limit) || 20;
+
+      const customers = await Customer.find().skip(offset).limit(limit);
+      const total = await Customer.find().count();
+
+      res.status(200).send({ customers, total, offset, limit });
     } catch (err) {
       res.status(500).send(err);
     }
@@ -23,7 +29,7 @@ const customerController = {
       res.status(500).send(err);
     }
   },
-  //createUser
+  //create
   create: async (req, res) => {
     try {
       const salt = await bcrypt.genSalt(10);
@@ -32,19 +38,52 @@ const customerController = {
       const newCustomer = new Customer({
         ...req.body,
         password: hashed,
+        id: generateID(),
       });
 
       const customer = await newCustomer.save();
 
-      res.status(200).send({ customer, message: "Create user successful." });
+      res
+        .status(200)
+        .send({ customer, message: "Create customer successful." });
     } catch (err) {
       res.status(500).send(err);
     }
   },
+
+  edit: async (req, res) => {
+    try {
+      const salt = await bcrypt.genSalt(10);
+      let hashed = "";
+      if (req.body.password) {
+        hashed = await bcrypt.hash(req.body.password, salt);
+      }
+
+      const updateField = { ...req.body, password: hashed };
+      if (!hashed) delete updateField.password;
+
+      const newCustomer = await Customer.updateOne(
+        {
+          id: req.params.id,
+        },
+        {
+          $set: updateField,
+        }
+      );
+      res
+        .status(200)
+        .send({ newCustomer, message: "Update customer successful." });
+    } catch (err) {
+      res.status(500).send(err);
+    }
+  },
+
   getById: async (req, res) => {
     try {
       const customer = await Customer.findOne({ id: req.params.id });
-      res.status(200).send({ customer });
+      const { password, ...rest } = customer._doc;
+
+      res.status(200).send({ customer: rest });
     } catch (err) {
       res.status(500).send(err);
     }

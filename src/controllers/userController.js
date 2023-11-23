@@ -65,7 +65,7 @@ const userController = {
   editUser: async (req, res) => {
     try {
       const salt = await bcrypt.genSalt(10);
-      const hashed = "";
+      let hashed = "";
       if (req.body.password) {
         hashed = await bcrypt.hash(req.body.password, salt);
       }

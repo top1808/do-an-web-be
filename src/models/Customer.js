@@ -6,11 +6,6 @@ const customerSchema = new mongoose.Schema({
         type: String,
         unique: true,
     },
-    username: {
-        type: String,
-        unique: true,
-        min: 6,
-    },
     name: {
         type: String,
         required: true,
