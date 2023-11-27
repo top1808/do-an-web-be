@@ -1,12 +1,15 @@
 const mongoose = require('mongoose');
-const { validateEmail } = require('../../utils/regex');
+const { validateEmail } = require('../utils/regex');
 
 const userSchema = new mongoose.Schema({
     username: {
         type: String,
         required: true,
-        minLength: 6,
         unique: true
+    },
+    name: {
+        type: String,
+        required: true,
     },
     email: {
         type: String,
@@ -19,9 +22,21 @@ const userSchema = new mongoose.Schema({
     },
     password: {
         type: String,
-        minLength: 8,
         required: true,
     },
+    image: {
+        type: String,
+    },
+    roleId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Role',
+    }
 }, { timestamps: true});
+
+userSchema.virtual('rId', {
+    ref: 'Role',
+    localField: "roleId",
+    foreignField: '_id',
+})
 
 module.exports = mongoose.model('User', userSchema);

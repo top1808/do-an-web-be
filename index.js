@@ -1,30 +1,41 @@
-const express = require('express');
-const bodyParser = require('body-parser');
+const express = require("express");
+const bodyParser = require("body-parser");
 
-const Database = require('./src/db/database');
-// const routes = require('./src/routes/controller');
-const cors = require('cors');
-const cookieParser = require('cookie-parser');
+const cors = require("cors");
+const cookieParser = require("cookie-parser");
+const database = require("./src/config/database");
+const adminRoutes = require("./src/app/admin");
+const customerRoutes = require("./src/app/customer");
+const webRoutes = require("./src/app/web");
 
-const authRoute = require('./src/routes/auth');
-const userRoute = require('./src/routes/user');
-
-require('dotenv').config();
+require("dotenv").config();
 
 const app = express();
 
-app.use(cors())
 app.use(cookieParser());
-app.use(express.json());
+app.use(
+  cors({
+    origin: [
+      "http://localhost:3000",
+      "http://localhost:3001",
+      "http://localhost:8000",
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  })
+);
+app.use(express.json({ limit: "30mb" }));
+app.use(express.static("public"));
 
-
-app.use(bodyParser.json({ limit: '30mb' }));
-app.use(bodyParser.urlencoded({extended: true, limit: '30mb'}));
+app.use(bodyParser.json({ limit: "30mb" }));
+app.use(bodyParser.urlencoded({ extended: true, limit: "30mb" }));
 
 // Website routes
-app.use('/v1/auth', authRoute);
-app.use('/v1/user', userRoute);
+
+app.use("/v1", adminRoutes);
+app.use("/v2", customerRoutes);
+app.use("/", webRoutes);
 
 app.listen(process.env.PORT, function () {
-    console.log("Starting at port 8000...");
+  console.log("Starting at port 8000...");
 });
