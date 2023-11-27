@@ -19,6 +19,8 @@ app.use(
       "http://localhost:3000",
       "http://localhost:3001",
       "http://localhost:8000",
+      "https://do-an-web-be.onrender.com",
+      "https://do-an-web-fe-git-main-top1808s-projects.vercel.app/",
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
