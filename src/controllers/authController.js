@@ -14,7 +14,7 @@ const authController = {
         _id: user._id,
       },
       process.env.JWT_ACCESS_KEY,
-      { expiresIn: "30s" }
+      { expiresIn: "1d" }
     );
   },
   generateRefreshToken: (user) => {
@@ -71,9 +71,8 @@ const authController = {
         httpOnly: true,
         maxAge: 1000 * 60 * 60 * 24,
         secure: true,
-        sameSite: "strict",
+        sameSite: "none",
         path: "/",
-        domain: process.env.NODE_ENV === 'development' ? '.localhost' : '.vercel.app'
       });
 
       res.status(200).send({ ...rest, accessToken });
@@ -115,7 +114,7 @@ const authController = {
           httpOnly: true,
           maxAge: 1000 * 60 * 60 * 24,
           secure: true,
-          sameSite: "strict",
+          sameSite: "none",
           path: "/",
           domain: process.env.NODE_ENV === 'development' ? '.localhost' : '.vercel.app'
         });
