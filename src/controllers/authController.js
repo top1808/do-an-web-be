@@ -71,7 +71,7 @@ const authController = {
         httpOnly: true,
         maxAge: 1000 * 60 * 60 * 24,
         secure: true,
-        sameSite: "strict",
+        sameSite: "none",
         path: "/",
         domain: process.env.NODE_ENV === 'development' ? '.localhost' : '.vercel.app'
       });
