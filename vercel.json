@@ -1,15 +1,16 @@
 {
     "version": 2,
+    "name": "api-do-an-web",
     "builds": [
         {
             "src": "./index.js",
-            "use": "@now/node"
+            "use": "@vercel/node"
         }
     ],
     "routes": [
         {
-            "src": "/(.*)",
-            "dest": "index.js"
+            "src": "/api/(.*)",
+            "dest": "./index.js"
         }
     ]
 }
