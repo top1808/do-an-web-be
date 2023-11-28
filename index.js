@@ -13,7 +13,6 @@ require("dotenv").config();
 const app = express();
 
 app.use(cookieParser());
-app.set("trust proxy", 1);
 app.use(
   cors({
     origin: [
@@ -22,7 +21,7 @@ app.use(
       "http://localhost:8000",
       "https://do-an-web-be.onrender.com",
       "https://do-an-web-fe-git-main-top1808s-projects.vercel.app",
-      "https://do-an-web-fe-user-git-main-top1808s-projects.vercel.app/",
+      "https://do-an-web-fe-user-git-main-top1808s-projects.vercel.app",
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
