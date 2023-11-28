@@ -73,7 +73,7 @@ const authController = {
         secure: true,
         sameSite: "strict",
         path: "/",
-        domain: process.env.NODE_ENV === 'development' ? '.localhost' : '.onrender.com'
+        domain: process.env.NODE_ENV === 'development' ? '.localhost' : '.vercel.app'
       });
 
       res.status(200).send({ ...rest, accessToken });
@@ -117,7 +117,7 @@ const authController = {
           secure: true,
           sameSite: "strict",
           path: "/",
-          domain: process.env.NODE_ENV === 'development' ? '.localhost' : '.onrender.com'
+          domain: process.env.NODE_ENV === 'development' ? '.localhost' : '.vercel.app'
         });
 
         res.status(200).send({ accessToken: newAccessToken });
