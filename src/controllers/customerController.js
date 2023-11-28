@@ -81,9 +81,12 @@ const customerController = {
   getById: async (req, res) => {
     try {
       const customer = await Customer.findOne({ id: req.params.id });
-      const { password, ...rest } = customer._doc;
-
-      res.status(200).send({ customer: rest });
+      if (customer) {
+        const { password, ...rest } = customer._doc;
+        res.status(200).send({ customer: rest });
+      } else {
+        res.status(200).send({ customer: null });
+      }
     } catch (err) {
       res.status(500).send(err);
     }
