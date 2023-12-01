@@ -24,12 +24,19 @@ const middlewareController = {
     try {
       const method = req.method.toLowerCase();
       const userId = req.user?._id;
-      const url = "/" + req.url.split("/")[2];
+
+      let url = "/" + req.url.split("/")[1];
+      if (url === "/authorize") {
+        url ="/" + req.url.split("/")[2];
+      }
+      if (url.includes("?")) url = url.split("?")[0];
       const permission = await Permission.findOne({ method: method, url: url });
+
       if (!permission) return next();
       const user = await User.findById(userId);
       if (!user)
         res.status(401).send({ message: "You are not authenticated." });
+
       const hasPermission = await RolePermission.findOne({
         roleId: user.roleId,
         permissionId: permission._id,

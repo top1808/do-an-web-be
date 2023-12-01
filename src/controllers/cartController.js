@@ -13,10 +13,29 @@ const cartController = {
     },
     addToCart: async (req, res) => {
         try {
+            console.log("user: ", req.header("userId"));
             const newCartItem = new Cart(req.body);
             await newCartItem.save();
             
             res.status(200).send({ message: 'Add item to cart successfully.' });
+        } catch (err) {
+            res.status(500).send(err);
+        }
+    },
+    editCartItem: async (req, res) => {
+        try {
+            const updateField = req.body;
+    
+            const newCartItem = await Category.updateOne(
+              {
+                _id: req.params.id,
+              },
+              {
+                $set: updateField,
+              }
+            );
+            
+            res.status(200).send({ newCartItem, message: 'Edit item to cart successfully.' });
         } catch (err) {
             res.status(500).send(err);
         }

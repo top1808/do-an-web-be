@@ -5,7 +5,8 @@ const productController = {
   //getAll
   getAll: async (req, res, next) => {
     try {
-      const products = await Product.find();
+      let products = await Product.find().populate('categoryIds').exec();
+
       res.status(200).send({ products });
     } catch (err) {
       res.status(500).send(err);
@@ -35,6 +36,24 @@ const productController = {
     }
   },
 
+  editProduct: async (req, res) => {
+    try {
+      const updateField = req.body;
+
+      const newProduct = await Product.updateOne(
+        {
+          _id: req.params.id,
+        },
+        {
+          $set: updateField,
+        }
+      );
+      res.status(200).send({ newProduct, message: "Update product successful." });
+    } catch (err) {
+      res.status(500).send(err);
+    }
+  },
+
   //customer api
   getProducts: async (req, res) => {
     try {
@@ -59,23 +78,6 @@ const productController = {
     }
   },
 
-  editProduct: async (req, res) => {
-    try {
-      const updateField = req.body;
-
-      const newProduct = await Product.updateOne(
-        {
-          _id: req.params.id,
-        },
-        {
-          $set: updateField,
-        }
-      );
-      res.status(200).send({ newProduct, message: "Update product successful." });
-    } catch (err) {
-      res.status(500).send(err);
-    }
-  },
 };
 
 module.exports = productController;
