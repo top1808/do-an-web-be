@@ -1,50 +1,62 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const Schema = mongoose.Schema;
 
-const cartSchema = new Schema({
+const cartSchema = new Schema(
+  {
     customerId: {
-        type: Schema.Types.ObjectId,
-        ref: "User",
-        required: true,
+      type: String,
+      required: true,
     },
-    productId: {
-        type: Schema.Types.ObjectId,
-        ref: "Product",
-        required: true,
-    },
-    productName: {
-        type: String,
-        required: true,
+    product: {
+      type: Schema.Types.ObjectId,
+      ref: "Product",
+      required: true,
     },
     price: {
-        type: Number,
-        required: true,
+      type: Number,
+      required: true,
     },
     promotionPrice: {
-        type: Number,
-        required: true,
+      type: Number,
     },
     quantity: {
-        type: Number,
-        required: true,
+      type: Number,
+      required: true,
     },
     totalPrice: {
-        type: Number,
-        required: true,
+      type: Number,
+      required: true,
     },
-}, { timestamps: true});
+  },
+  { timestamps: true }
+);
 
-cartSchema.virtual('cusId', {
-    ref: 'User',
-    localField: "customerId",
-    foreignField: '_id',
+cartSchema.pre("updateOne", async function (done) {
+  const update = this.getUpdate();
+  if (update && update.$set.quantity) {
+    const quantity = update.$set.quantity;
+    const docToUpdate = await this.model.findOne(this.getQuery());
+
+    if (docToUpdate) {
+      const price = docToUpdate.price;
+      const totalPrice = quantity * price;
+      update.$set.totalPrice = totalPrice;
+    }
+  }
+  done();
 });
 
-cartSchema.virtual('proId', {
-    ref: 'Product',
-    localField: "productId",
-    foreignField: '_id',
+cartSchema.virtual("cusId", {
+  ref: "Customer",
+  localField: "customerId",
+  foreignField: "id",
 });
 
-module.exports = mongoose.model('Cart', cartSchema);
+cartSchema.virtual("proId", {
+  ref: "Product",
+  localField: "product",
+  foreignField: "_id",
+});
+
+module.exports = mongoose.model("Cart", cartSchema);

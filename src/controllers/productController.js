@@ -5,10 +5,11 @@ const productController = {
   //getAll
   getAll: async (req, res, next) => {
     try {
-      let products = await Product.find().populate('categoryIds').exec();
+      let products = await Product.find().populate('categoryIds').sort({ createdAt: -1 });
 
       res.status(200).send({ products });
     } catch (err) {
+      console.log("🚀 ~ file: productController.js:12 ~ getAll: ~ err:", err)
       res.status(500).send(err);
     }
   },
@@ -54,6 +55,16 @@ const productController = {
     }
   },
 
+  getProductInfo: async (req, res) => {
+    try {
+      const product = await Product.findById(req.params.id);
+
+      res.status(200).send({ product });
+    } catch (err) {
+      res.status(500).send(err);
+    }
+  },
+
   //customer api
   getProducts: async (req, res) => {
     try {
@@ -63,16 +74,6 @@ const productController = {
       const products = await Product.find().skip(skip).limit(limit);
 
       res.status(200).send({ products });
-    } catch (err) {
-      res.status(500).send(err);
-    }
-  },
-
-  getProductInfo: async (req, res) => {
-    try {
-      const product = await Product.findById(req.params.id);
-
-      res.status(200).send({ product });
     } catch (err) {
       res.status(500).send(err);
     }
