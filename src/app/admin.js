@@ -9,6 +9,7 @@ const categoryRoute = require("../routes/admin/category");
 const productRoute = require("../routes/admin/product");
 const middlewareController = require("../controllers/middlewareController");
 const orderRoute = require('../routes/admin/order');
+const voucherRoute = require('../routes/admin/voucher');
 
 router.use("/auth", authRoute);
 
@@ -21,6 +22,7 @@ router.use("/order", orderRoute);
 router.use("/customer", customerRoute);
 router.use("/category", categoryRoute);
 router.use("/product", productRoute);
+router.use("/voucher", voucherRoute);
 
 module.exports = router;
 

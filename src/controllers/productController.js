@@ -9,7 +9,6 @@ const productController = {
 
       res.status(200).send({ products });
     } catch (err) {
-      console.log("🚀 ~ file: productController.js:12 ~ getAll: ~ err:", err)
       res.status(500).send(err);
     }
   },
