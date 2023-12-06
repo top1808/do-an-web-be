@@ -7,7 +7,10 @@ const voucherController = {
       const offset = Number(query?.offset) || 0;
       const limit = Number(query?.limit) || 20;
 
-      const vouchers = await Voucher.find().sort({ createdAt: -1 }).skip(offset).limit(limit);
+      const vouchers = await Voucher.find()
+        .sort({ createdAt: -1 })
+        .skip(offset)
+        .limit(limit);
       const total = await Voucher.find().count();
 
       res.status(200).send({ vouchers, total, offset, limit });
@@ -70,6 +73,20 @@ const voucherController = {
     try {
       const voucher = await Voucher.findById(req.params.id);
       res.status(200).send({ voucher });
+    } catch (err) {
+      res.status(500).send(err);
+    }
+  },
+
+  /************
+   * CUSTOMER *
+   ************/
+
+  getListVoucher: async (req, res, next) => {
+    try {
+      const vouchers = await Voucher.find();
+
+      res.status(200).send({ vouchers });
     } catch (err) {
       res.status(500).send(err);
     }
