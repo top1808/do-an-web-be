@@ -1,4 +1,7 @@
+const dayjs = require("dayjs");
 const Cart = require("../models/Cart");
+const Order = require("../models/Order");
+const { generateID } = require("../utils/functionHelper");
 
 const cartController = {
   getCart: async (req, res) => {
@@ -16,37 +19,39 @@ const cartController = {
   addToCart: async (req, res) => {
     try {
       const customerId = await req.header("userId");
+      if (customerId) {
+        const data = {
+          customerId: customerId,
+          product: req.body._id,
+          price: req.body.price,
+          promotionPrice: 0,
+          quantity: req.body.quantity,
+          totalPrice: req.body.price * req.body.quantity,
+        };
+        const findCart = await Cart.findOne({
+          customerId: data.customerId,
+          product: data.product,
+        });
 
-      const data = {
-        customerId: customerId,
-        product: req.body._id,
-        price: req.body.price,
-        promotionPrice: 0,
-        quantity: req.body.quantity,
-        totalPrice: req.body.price * req.body.quantity,
-      };
-      const findCart = await Cart.findOne({
-        customerId: data.customerId,
-        product: data.product,
-      });
-
-      if (findCart) {
-        await Cart.updateOne(
-          {
-            _id: findCart._id,
-          },
-          {
-            $set: {
-              quantity: findCart.quantity + data.quantity,
+        if (findCart) {
+          await Cart.updateOne(
+            {
+              _id: findCart._id,
             },
-          }
-        );
-      } else {
-        const newCartItem = new Cart(data);
-        await newCartItem.save();
-      }
+            {
+              $set: {
+                quantity: findCart.quantity + data.quantity,
+              },
+            }
+          );
+        } else {
+          const newCartItem = new Cart(data);
+          await newCartItem.save();
+        }
 
-      res.status(200).send({ message: "Thêm sản phẩm thành công." });
+        return res.status(200).send({ message: "Thêm sản phẩm thành công." });
+      }
+      res.status(403).send("Bạn chưa đăng nhập.");
     } catch (err) {
       res.status(500).send(err);
     }
@@ -77,6 +82,45 @@ const cartController = {
       await findCartItem.deleteOne();
 
       res.status(200).send({ message: "Xóa sản phẩm thành công." });
+    } catch (err) {
+      res.status(500).send(err);
+    }
+  },
+
+  clearAll: async (req, res) => {
+    try {
+      const customerId = await req.header("userId");
+      if (customerId) {
+        await Cart.deleteMany({ customerId: customerId });
+        return res
+          .status(200)
+          .send({ message: "Xóa tất cả sản phẩm thành công." });
+      }
+
+      res.status(403).send({ message: "Bạn chưa đăng nhập." });
+    } catch (err) {
+      res.status(500).send(err);
+    }
+  },
+
+  pay: async (req, res) => {
+    try {
+      const customerId = await req.header("userId");
+
+      const newOrder = new Order({
+        ...req.body,
+        customerCode: customerId,
+        orderCode: generateID(),
+        status: "delivering",
+        deliveryDate: dayjs(new Date()).add(3, "days").format("YYYY-MM-DD"),
+      });
+
+      const order = await newOrder.save();
+
+      const productsDelete = req.body.products.map((p) => p.cartId);
+      await Cart.deleteMany({ _id: { $in: productsDelete } });
+
+      res.status(200).send({ order, message: "Thanh toán thành công." });
     } catch (err) {
       res.status(500).send(err);
     }
