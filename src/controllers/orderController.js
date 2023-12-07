@@ -1,9 +1,10 @@
 const Order = require("../models/Order");
+const Product = require("../models/Product");
 const { generateID } = require("../utils/functionHelper");
 
 const orderController = {
   //getAll
-  getAll: async (req, res, next) => {
+  getAll: async (req, res) => {
     try {
       const query = req.query;
       const offset = Number(query?.offset) || 0;
@@ -18,7 +19,7 @@ const orderController = {
     }
   },
   //delete
-  delete: async (req, res, next) => {
+  delete: async (req, res) => {
     try {
       const order = await Order.findById(req.params.id);
 
@@ -38,9 +39,7 @@ const orderController = {
 
       const order = await newOrder.save();
 
-      res
-        .status(200)
-        .send({ order, message: "Create order successful." });
+      res.status(200).send({ order, message: "Create order successful." });
     } catch (err) {
       res.status(500).send(err);
     }
@@ -48,8 +47,7 @@ const orderController = {
 
   edit: async (req, res) => {
     try {
-
-      const updateField = req.body
+      const updateField = req.body;
 
       const newOrder = await Order.updateOne(
         {
@@ -59,9 +57,7 @@ const orderController = {
           $set: updateField,
         }
       );
-      res
-        .status(200)
-        .send({ newOrder, message: "Update order successful." });
+      res.status(200).send({ newOrder, message: "Update order successful." });
     } catch (err) {
       res.status(500).send(err);
     }
@@ -72,6 +68,63 @@ const orderController = {
       const order = await Order.findById(req.params.id);
 
       res.status(200).send({ order });
+    } catch (err) {
+      res.status(500).send(err);
+    }
+  },
+
+  /************
+   * CUSTOMER *
+   ************/
+  getMyOrder: async (req, res) => {
+    try {
+      const customerId = await req.header("userId");
+
+      const query = req.query;
+      const offset = Number(query?.offset) || 0;
+      const limit = Number(query?.limit) || 20;
+      const status = query?.status || "all";
+
+      const orders = await Order.find({ customerCode: customerId })
+        .skip(offset)
+        .limit(limit);
+      const total = await Order.find({ customerCode: customerId }).count();
+
+      res.status(200).send({ orders, total, offset, limit });
+    } catch (err) {
+      res.status(500).send(err);
+    }
+  },
+  getMyOrderDetails: async (req, res) => {
+    try {
+      const customerId = await req.header("userId");
+
+      const order = await Order.findOne({
+        _id: req.params.id,
+        customerCode: customerId,
+      });
+
+      const products = await Product.find();
+      const newOrderProducts = [];
+
+      order.products.map((product) => {
+        const findProduct = products.find(
+          (p) => p._id.toString() === product.productCode.toString()
+        );
+        if (findProduct) {
+          newOrderProducts.push({
+            ...product._doc,
+            image: findProduct.image,
+          });
+        }
+      });
+
+      res.status(200).send({
+        order: {
+          ...order._doc,
+          products: newOrderProducts,
+        },
+      });
     } catch (err) {
       res.status(500).send(err);
     }

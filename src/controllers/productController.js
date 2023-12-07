@@ -5,7 +5,9 @@ const productController = {
   //getAll
   getAll: async (req, res, next) => {
     try {
-      let products = await Product.find().populate('categoryIds').exec();
+      let products = await Product.find()
+        .populate("categoryIds")
+        .sort({ createdAt: -1 });
 
       res.status(200).send({ products });
     } catch (err) {
@@ -48,21 +50,9 @@ const productController = {
           $set: updateField,
         }
       );
-      res.status(200).send({ newProduct, message: "Update product successful." });
-    } catch (err) {
-      res.status(500).send(err);
-    }
-  },
-
-  //customer api
-  getProducts: async (req, res) => {
-    try {
-      const query = req.query;
-      const skip = query?.skip || 0;
-      const limit = query?.limit || 20;
-      const products = await Product.find().skip(skip).limit(limit);
-
-      res.status(200).send({ products });
+      res
+        .status(200)
+        .send({ newProduct, message: "Update product successful." });
     } catch (err) {
       res.status(500).send(err);
     }
@@ -78,6 +68,57 @@ const productController = {
     }
   },
 
+  /******************
+   *CUSTOMER API *
+   ******************/
+  getProducts: async (req, res) => {
+    try {
+      const query = req.query;
+      const skip = query?.skip || 0;
+      const limit = query?.limit || 12;
+      const products = await Product.find().skip(skip).limit(limit);
+
+      res.status(200).send({ products });
+    } catch (err) {
+      res.status(500).send(err);
+    }
+  },
+
+  getProductByCategory: async (req, res) => {
+    try {
+      const query = req.query;
+      // const skip = query?.skip || 0;
+      // const limit = query?.limit || 20;
+      const products = await Product.find(
+        req.params.categoryId === "all"
+          ? {}
+          : { categoryIds: req.params.categoryId }
+      );
+      // .skip(skip)
+      // .limit(limit);
+
+      res.status(200).send({ products });
+    } catch (err) {
+      res.status(500).send(err);
+    }
+  },
+
+  getProductRelative: async (req, res) => {
+    try {
+      const product = await Product.findById(req.params.id);
+
+      const { categoryIds } = product._doc;
+
+      const products = await Product.find({
+        categoryIds: { $in: categoryIds },
+        _id: { $ne: product._id },
+      });
+
+      res.status(200).send({ products });
+    } catch (err) {
+      res.status(500).send(err);
+    }
+  },
 };
 
 module.exports = productController;
