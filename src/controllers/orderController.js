@@ -1,4 +1,5 @@
 const Order = require("../models/Order");
+const Product = require("../models/Product");
 const { generateID } = require("../utils/functionHelper");
 
 const orderController = {
@@ -98,11 +99,32 @@ const orderController = {
     try {
       const customerId = await req.header("userId");
 
-      const order = await Order.findById(req.params.id).find({
+      const order = await Order.findOne({
+        _id: req.params.id,
         customerCode: customerId,
       });
 
-      res.status(200).send({ order });
+      const products = await Product.find();
+      const newOrderProducts = [];
+
+      order.products.map((product) => {
+        const findProduct = products.find(
+          (p) => p._id.toString() === product.productCode.toString()
+        );
+        if (findProduct) {
+          newOrderProducts.push({
+            ...product._doc,
+            image: findProduct.image,
+          });
+        }
+      });
+
+      res.status(200).send({
+        order: {
+          ...order._doc,
+          products: newOrderProducts,
+        },
+      });
     } catch (err) {
       res.status(500).send(err);
     }

@@ -182,8 +182,34 @@ const authController = {
 
   logoutCustomer: async (req, res) => {
     res.cookie("refreshTokenUser", "");
-
     res.status(200).send({ message: "Logout successfully." });
+  },
+
+  changePassword: async (req, res) => {
+    try {
+      const customerId = await req.header("userId");
+
+      const customer = await Customer.findOne({ id: customerId });
+      if (!customer)
+        return res.status(404).send({ message: "Customer not found." });
+
+      const { password, ...rest } = customer._doc;
+
+      const checkPass = await bcrypt.compare(req.body.password, password);
+
+      if (!checkPass) {
+        return res.status(404).send({ message: "Password is wrong." });
+      }
+
+      const salt = await bcrypt.genSalt(10);
+      const hashed = await bcrypt.hash(req.body.newPassword, salt);
+
+      await customer.updateOne({ password: hashed });
+
+      res.status(200).send({ message: "Change password successfully." });
+    } catch (err) {
+      res.status(500).send(err);
+    }
   },
 };
 

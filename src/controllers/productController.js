@@ -93,9 +93,26 @@ const productController = {
         req.params.categoryId === "all"
           ? {}
           : { categoryIds: req.params.categoryId }
-      )
-        // .skip(skip)
-        // .limit(limit);
+      );
+      // .skip(skip)
+      // .limit(limit);
+
+      res.status(200).send({ products });
+    } catch (err) {
+      res.status(500).send(err);
+    }
+  },
+
+  getProductRelative: async (req, res) => {
+    try {
+      const product = await Product.findById(req.params.id);
+
+      const { categoryIds } = product._doc;
+
+      const products = await Product.find({
+        categoryIds: { $in: categoryIds },
+        _id: { $ne: product._id },
+      });
 
       res.status(200).send({ products });
     } catch (err) {
