@@ -10,6 +10,7 @@ const productRoute = require("../routes/admin/product");
 const middlewareController = require("../controllers/middlewareController");
 const orderRoute = require('../routes/admin/order');
 const voucherRoute = require('../routes/admin/voucher');
+
 const statisticRoute = require('../routes/admin/statistic');
 
 router.use("/auth", authRoute);
