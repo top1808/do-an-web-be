@@ -11,6 +11,8 @@ const middlewareController = require("../controllers/middlewareController");
 const orderRoute = require('../routes/admin/order');
 const voucherRoute = require('../routes/admin/voucher');
 
+const statisticRoute = require('../routes/admin/statistic');
+
 router.use("/auth", authRoute);
 
 router.use(middlewareController.verifyToken);
@@ -23,6 +25,7 @@ router.use("/customer", customerRoute);
 router.use("/category", categoryRoute);
 router.use("/product", productRoute);
 router.use("/voucher", voucherRoute);
+router.use("/statistic", statisticRoute);
 
 module.exports = router;
 
