@@ -34,6 +34,8 @@ const voucherController = {
     try {
       const newVoucher = new Voucher({
         ...req.body,
+        quantityUsed: 0,
+        quantityLeft: req.body.quantity,
         maxDiscountValue:
           req.body?.type === "percent"
             ? req.body.maxDiscountValue
@@ -87,6 +89,34 @@ const voucherController = {
       const vouchers = await Voucher.find();
 
       res.status(200).send({ vouchers });
+    } catch (err) {
+      res.status(500).send(err);
+    }
+  },
+
+  applyVoucher: async (req, res, next) => {
+    try {
+      const voucher = await Voucher.findOne({ code: req.body.voucherCode });
+
+      if (!voucher)
+        return res.status(404).send({ message: "Voucher not found." });
+
+      if (req.body.totalProductPrice < voucher.minOrderValue) return res.status(400).send({message: "Your order is not enough to use this voucher."});
+
+      let discountValue = voucher.value;
+
+      if (voucher.type === "percent") {
+        discountValue = (req.body.totalProductPrice * voucher.value) / 100;
+        discountValue =
+          discountValue > voucher.maxDiscountValue
+            ? voucher.maxDiscountValue
+            : discountValue;
+      }
+
+      res.status(200).send({
+        voucher: { ...voucher._doc, discountValue: discountValue },
+        message: "Apply voucher success",
+      });
     } catch (err) {
       res.status(500).send(err);
     }
