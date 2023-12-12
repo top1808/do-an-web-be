@@ -2,6 +2,7 @@ const dayjs = require("dayjs");
 const Cart = require("../models/Cart");
 const Order = require("../models/Order");
 const { generateID } = require("../utils/functionHelper");
+const Voucher = require("../models/Voucher");
 
 const cartController = {
   getCart: async (req, res) => {
@@ -116,6 +117,12 @@ const cartController = {
       });
 
       const order = await newOrder.save();
+
+      if (req.body.voucher) {
+        await Voucher.updateOne({ code: req.body.voucher.code }, { $inc: { quantityUsed: 1 } })
+      }
+
+      
 
       const productsDelete = req.body.products.map((p) => p.cartId);
       await Cart.deleteMany({ _id: { $in: productsDelete } });

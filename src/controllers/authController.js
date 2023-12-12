@@ -211,6 +211,28 @@ const authController = {
       res.status(500).send(err);
     }
   },
+
+  changeInfor: async (req, res) => {
+    try {
+      const customerId = await req.header("userId");
+
+      const updateField = req.body;
+
+      const data = await Customer.findOneAndUpdate(
+        { id: customerId },
+        {
+          $set: updateField,
+        },
+        { new: true }
+      );
+
+      res
+        .status(200)
+        .send({ data, message: "Change information successfully." });
+    } catch (err) {
+      res.status(500).send(err);
+    }
+  },
 };
 
 module.exports = authController;
