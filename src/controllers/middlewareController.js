@@ -27,7 +27,7 @@ const middlewareController = {
 
       let url = "/" + req.url.split("/")[1];
       if (url === "/authorize") {
-        url ="/" + req.url.split("/")[2];
+        url = "/" + req.url.split("/")[2];
       }
       if (url.includes("?")) url = url.split("?")[0];
       const permission = await Permission.findOne({ method: method, url: url });
