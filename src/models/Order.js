@@ -77,6 +77,12 @@ const orderSchema = new Schema(
     totalProductPrice: {
       type: Number,
     },
+    voucherCode: {
+      type: String,
+    },
+    voucherDiscount: {
+      type: Number,
+    },
     note: {
       type: String,
     },
