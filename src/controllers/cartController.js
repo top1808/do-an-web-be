@@ -116,9 +116,9 @@ const cartController = {
         orderCode: generateID(),
         status: "delivering",
         deliveryDate: dayjs(new Date()).add(3, "days").format("YYYY-MM-DD"),
-        voucherCode: data.voucher.code,
-        voucherDiscount: data.voucher.discountValue,
-        totalPrice: data.totalProductPrice + data.deliveryFee - data.voucher.discountValue
+        voucherCode: data.voucher?.code || "",
+        voucherDiscount: data.voucher?.discountValue || "",
+        totalPrice: data.totalProductPrice + data.deliveryFee - (data.voucher?.discountValue || 0)
       });
 
       const order = await newOrder.save();
