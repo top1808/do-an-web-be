@@ -101,17 +101,32 @@ const productController = {
   getProductByCategory: async (req, res) => {
     try {
       const query = req.query;
-      // const skip = query?.skip || 0;
-      // const limit = query?.limit || 20;
+      const offset =Number(query?.offset) || 0;
+      const limit = Number(query?.limit) || 12;
+
       const products = await Product.find(
         req.params.categoryId === "all"
           ? {}
           : { categoryIds: req.params.categoryId }
-      );
-      // .skip(skip)
-      // .limit(limit);
+      )
+        .skip(offset)
+        .limit(limit);
 
-      res.status(200).send({ products });
+      let total = 0;
+      if (req.params.categoryId === "all") {
+        total = await Product.estimatedDocumentCount();
+      } else {
+        total = await Product.countDocuments({ categoryIds: req.params.categoryId });
+      }
+
+      const pagination = {
+        total,
+        offset,
+        limit,
+        page: offset / limit + 1,
+      };
+
+      res.status(200).send({ products, pagination });
     } catch (err) {
       res.status(500).send(err);
     }

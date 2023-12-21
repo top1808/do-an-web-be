@@ -108,23 +108,29 @@ const cartController = {
     try {
       const customerId = await req.header("userId");
 
+      const data = req.body;
+
       const newOrder = new Order({
-        ...req.body,
+        ...data,
         customerCode: customerId,
         orderCode: generateID(),
         status: "delivering",
         deliveryDate: dayjs(new Date()).add(3, "days").format("YYYY-MM-DD"),
+        voucherCode: data.voucher.code,
+        voucherDiscount: data.voucher.discountValue,
+        totalPrice: data.totalProductPrice + data.deliveryFee - data.voucher.discountValue
       });
 
       const order = await newOrder.save();
 
-      if (req.body.voucher) {
-        await Voucher.updateOne({ code: req.body.voucher.code }, { $inc: { quantityUsed: 1 } })
+      if (data.voucher) {
+        await Voucher.updateOne(
+          { code: data.voucher.code },
+          { $inc: { quantityUsed: 1 } }
+        );
       }
 
-      
-
-      const productsDelete = req.body.products.map((p) => p.cartId);
+      const productsDelete = data.products.map((p) => p.cartId);
       await Cart.deleteMany({ _id: { $in: productsDelete } });
 
       res.status(200).send({ order, message: "Thanh toán thành công." });
