@@ -12,6 +12,7 @@ const orderRoute = require('../routes/admin/order');
 const voucherRoute = require('../routes/admin/voucher');
 
 const statisticRoute = require('../routes/admin/statistic');
+const discountProgramRoute = require('../routes/admin/discountProgram');
 
 router.use("/auth", authRoute);
 
@@ -25,6 +26,7 @@ router.use("/customer", customerRoute);
 router.use("/category", categoryRoute);
 router.use("/product", productRoute);
 router.use("/voucher", voucherRoute);
+router.use("/discount-program", discountProgramRoute);
 router.use("/statistic", statisticRoute);
 
 module.exports = router;
