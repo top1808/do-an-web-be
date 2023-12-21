@@ -1,15 +1,29 @@
-const Category = require("../models/Category");
 const Product = require("../models/Product");
 
 const productController = {
   //getAll
   getAll: async (req, res, next) => {
     try {
+      const query = req.query;
+      const offset = Number(query?.offset) || 0;
+      const limit = Number(query?.limit) || 10;
+
       let products = await Product.find()
         .populate("categoryIds")
-        .sort({ createdAt: -1 });
+        .sort({ createdAt: -1 })
+        .skip(offset)
+        .limit(limit);
 
-      res.status(200).send({ products });
+      const total = await Product.find().count();
+
+      const pagination = {
+        total,
+        offset,
+        limit,
+        page: offset / limit + 1,
+      };
+
+      res.status(200).send({ products, pagination });
     } catch (err) {
       res.status(500).send(err);
     }
