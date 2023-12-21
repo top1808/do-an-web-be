@@ -117,7 +117,7 @@ const cartController = {
         status: "delivering",
         deliveryDate: dayjs(new Date()).add(3, "days").format("YYYY-MM-DD"),
         voucherCode: data.voucher?.code || "",
-        voucherDiscount: data.voucher?.discountValue || "",
+        voucherDiscount: data.voucher?.discountValue || 0,
         totalPrice: data.totalProductPrice + data.deliveryFee - (data.voucher?.discountValue || 0)
       });
 
