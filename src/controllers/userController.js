@@ -62,6 +62,7 @@ const userController = {
       res.status(500).send(err);
     }
   },
+
   editUser: async (req, res) => {
     try {
       const salt = await bcrypt.genSalt(10);
@@ -82,6 +83,32 @@ const userController = {
         }
       );
       res.status(200).send({ newUser, message: "Update user successful." });
+    } catch (err) {
+      res.status(500).send(err);
+    }
+  },
+
+  changePassword: async (req, res) => {
+    try {
+
+      const user = await User.findById(req.params.id)
+      if (!user)
+        return res.status(404).send({ message: "User not found." });
+
+      const { password, ...rest } = user._doc;
+
+      const checkPass = await bcrypt.compare(req.body.password, password);
+
+      if (!checkPass) {
+        return res.status(404).send({ message: "Password is wrong." });
+      }
+
+      const salt = await bcrypt.genSalt(10);
+      const hashed = await bcrypt.hash(req.body.newPassword, salt);
+
+      await user.updateOne({ password: hashed });
+
+      res.status(200).send({ message: "Change password successfully." });
     } catch (err) {
       res.status(500).send(err);
     }
