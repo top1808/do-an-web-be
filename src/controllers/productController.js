@@ -1,4 +1,5 @@
 const Product = require("../models/Product");
+const { removeDiacriticsFromString } = require("../utils/functionHelper");
 
 const productController = {
   //getAll
@@ -101,7 +102,7 @@ const productController = {
   getProductByCategory: async (req, res) => {
     try {
       const query = req.query;
-      const offset =Number(query?.offset) || 0;
+      const offset = Number(query?.offset) || 0;
       const limit = Number(query?.limit) || 12;
 
       const products = await Product.find(
@@ -116,7 +117,9 @@ const productController = {
       if (req.params.categoryId === "all") {
         total = await Product.estimatedDocumentCount();
       } else {
-        total = await Product.countDocuments({ categoryIds: req.params.categoryId });
+        total = await Product.countDocuments({
+          categoryIds: req.params.categoryId,
+        });
       }
 
       const pagination = {
@@ -142,6 +145,20 @@ const productController = {
         categoryIds: { $in: categoryIds },
         _id: { $ne: product._id },
       });
+
+      res.status(200).send({ products });
+    } catch (err) {
+      res.status(500).send(err);
+    }
+  },
+
+  searchProducts: async (req, res) => {
+    try {
+      const search = req.params.search;
+
+      const products = await Product.find({
+        name: { $regex: new RegExp(search, "i") },
+      }).populate("categoryIds");
 
       res.status(200).send({ products });
     } catch (err) {
