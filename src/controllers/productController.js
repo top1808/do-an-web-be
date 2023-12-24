@@ -3,7 +3,7 @@ const { removeDiacriticsFromString } = require("../utils/functionHelper");
 
 const productController = {
   //getAll
-  getAll: async (req, res, next) => {
+  getData: async (req, res) => {
     try {
       const query = req.query;
       const offset = Number(query?.offset) || 0;
@@ -30,7 +30,7 @@ const productController = {
     }
   },
   //delete
-  delete: async (req, res, next) => {
+  delete: async (req, res) => {
     try {
       const product = await Product.findById(req.params.id);
       await product.deleteOne();
@@ -78,6 +78,20 @@ const productController = {
       const product = await Product.findById(req.params.id);
 
       res.status(200).send({ product });
+    } catch (err) {
+      res.status(500).send(err);
+    }
+  },
+
+  getAllProduct: async (req, res) => {
+    try {
+
+      let products = await Product.find()
+        .populate("categoryIds")
+        .sort({ createdAt: -1 })
+        .select(['-image', '-description'])
+
+      res.status(200).send({ products });
     } catch (err) {
       res.status(500).send(err);
     }
