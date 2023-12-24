@@ -89,8 +89,19 @@ const orderSchema = new Schema(
     status: {
       type: String,
     },
+    reasonCancel: {
+      type: String,
+      default: "",
+    }
   },
   { timestamps: true }
 );
+
+orderSchema.virtual('voucher', {
+  ref: 'Voucher',
+  localField: "voucherCode",
+  foreignField: 'code',
+  justOne: true,
+})
 
 module.exports = mongoose.model("Order", orderSchema);

@@ -114,7 +114,7 @@ const cartController = {
         ...data,
         customerCode: customerId,
         orderCode: generateID(),
-        status: "delivering",
+        status: "processing",
         deliveryDate: dayjs(new Date()).add(3, "days").format("YYYY-MM-DD"),
         voucherCode: data.voucher?.code || "",
         voucherDiscount: data.voucher?.discountValue || 0,

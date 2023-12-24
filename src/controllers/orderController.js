@@ -63,9 +63,35 @@ const orderController = {
     }
   },
 
+  changeStatus: async (req, res) => {
+    try {
+      await Order.updateOne(
+        {
+          _id: req.params.id,
+        },
+        {
+          $set: {
+            status: req.body.status,
+            reasonCancel: req.body?.reason,
+          },
+        }
+      );
+      res
+        .status(200)
+        .send({ id: req.params.id, message: "Change status order successful." });
+    } catch (err) {
+      res.status(500).send(err);
+    }
+  },
+
   getById: async (req, res) => {
     try {
-      const order = await Order.findById(req.params.id);
+      const findOrder = await Order.findById(req.params.id).populate("voucher");
+
+      const order = {
+        ...findOrder._doc,
+        voucher: findOrder.voucher,
+      };
 
       res.status(200).send({ order });
     } catch (err) {
