@@ -72,13 +72,15 @@ const orderController = {
         {
           $set: {
             status: req.body.status,
-            reasonCancel: req.body?.reason,
+            deliveryDate: req.body?.deliveryDate || "",
+            reasonCancel: req.body?.reason || "",
           },
         }
       );
-      res
-        .status(200)
-        .send({ id: req.params.id, message: "Change status order successful." });
+      res.status(200).send({
+        id: req.params.id,
+        message: "Change status order successful.",
+      });
     } catch (err) {
       res.status(500).send(err);
     }
@@ -130,20 +132,16 @@ const orderController = {
         customerCode: customerId,
       });
 
-      const products = await Product.find();
-      const newOrderProducts = [];
-
-      order.products.map((product) => {
-        const findProduct = products.find(
-          (p) => p._id.toString() === product.productCode.toString()
-        );
+      const newOrderProducts = await Promise.all(order.products.map(async (product) => {
+        const findProduct = await Product.findById(product.productCode);
+      
         if (findProduct) {
-          newOrderProducts.push({
+          return {
             ...product._doc,
-            image: findProduct.image,
-          });
+            image: findProduct._doc.image,
+          };
         }
-      });
+      }));
 
       res.status(200).send({
         order: {
