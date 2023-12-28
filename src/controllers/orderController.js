@@ -10,7 +10,10 @@ const orderController = {
       const offset = Number(query?.offset) || 0;
       const limit = Number(query?.limit) || 20;
 
-      const orders = await Order.find().skip(offset).limit(limit);
+      const orders = await Order.find()
+        .sort({ createdAt: -1 })
+        .skip(offset)
+        .limit(limit);
       const total = await Order.find().count();
 
       res.status(200).send({ orders, total, offset, limit });
@@ -65,16 +68,24 @@ const orderController = {
 
   changeStatus: async (req, res) => {
     try {
+      const updateFields = {
+        status: req.body.status,
+        deliveryAddress: req.body?.deliveryAddress || "",
+        deliveryDate: req.body?.deliveryDate || "",
+        receivedDate: req.body?.receivedDate || "",
+        reasonCancel: req.body?.reason || "",
+      };
+
+      for (const key in updateFields) {
+        if (!updateFields[key]) delete updateFields[key];
+      }
+
       await Order.updateOne(
         {
           _id: req.params.id,
         },
         {
-          $set: {
-            status: req.body.status,
-            deliveryDate: req.body?.deliveryDate || "",
-            reasonCancel: req.body?.reason || "",
-          },
+          $set: updateFields,
         }
       );
       res.status(200).send({
@@ -132,16 +143,18 @@ const orderController = {
         customerCode: customerId,
       });
 
-      const newOrderProducts = await Promise.all(order.products.map(async (product) => {
-        const findProduct = await Product.findById(product.productCode);
-      
-        if (findProduct) {
-          return {
-            ...product._doc,
-            image: findProduct._doc.image,
-          };
-        }
-      }));
+      const newOrderProducts = await Promise.all(
+        order.products.map(async (product) => {
+          const findProduct = await Product.findById(product.productCode);
+
+          if (findProduct) {
+            return {
+              ...product._doc,
+              image: findProduct._doc.image,
+            };
+          }
+        })
+      );
 
       res.status(200).send({
         order: {
