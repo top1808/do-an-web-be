@@ -115,10 +115,13 @@ const cartController = {
         customerCode: customerId,
         orderCode: generateID(),
         status: "processing",
-        deliveryDate: dayjs(new Date()).add(3, "days").format("YYYY-MM-DD"),
+        deliveryDate: "",
         voucherCode: data.voucher?.code || "",
         voucherDiscount: data.voucher?.discountValue || 0,
-        totalPrice: data.totalProductPrice + data.deliveryFee - (data.voucher?.discountValue || 0)
+        totalPrice:
+          data.totalProductPrice +
+          data.deliveryFee -
+          (data.voucher?.discountValue || 0),
       });
 
       const order = await newOrder.save();

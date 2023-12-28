@@ -4,5 +4,6 @@ const orderRoute = require('express').Router();
 
 orderRoute.get('/', orderController.getMyOrder);
 orderRoute.get('/:id',  orderController.getMyOrderDetails);
+orderRoute.put('/change-status/:id',  orderController.changeStatus);
 
 module.exports = orderRoute;

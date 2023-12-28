@@ -60,9 +60,11 @@ const orderSchema = new Schema(
     },
     deliveryAddress: {
       type: String,
-      required: true,
     },
     deliveryDate: {
+      type: String,
+    },
+    receivedDate: {
       type: String,
     },
     deliveryFee: {
