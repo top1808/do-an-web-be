@@ -23,8 +23,13 @@ const discountProgramController = {
   delete: async (req, res, next) => {
     try {
       const discountProgram = await DiscountProgram.findById(req.params.id);
-
       await discountProgram.deleteOne();
+
+      await Product.updateMany(
+        { discountProgramId: req.params.id },
+        { $set: { discountProgramId: null } }
+      );
+
       res.status(200).send({ message: "Delete discount program success." });
     } catch (err) {
       res.status(500).send(err);
@@ -33,11 +38,14 @@ const discountProgramController = {
   //create
   create: async (req, res) => {
     try {
-      const newDiscountProgram = new DiscountProgram({
-        ...req.body,
-      });
+      const newDiscountProgram = await DiscountProgram.create({ ...req.body });
 
-      await newDiscountProgram.save();
+      const productIds = req.body.products?.map((item) => item.productCode);
+
+      await Product.updateMany(
+        { _id: { $in: productIds } },
+        { $set: { discountProgramId: newDiscountProgram._id } }
+      );
 
       res.status(200).send({ message: "Create discount program success." });
     } catch (err) {
@@ -58,6 +66,29 @@ const discountProgramController = {
         }
       );
 
+      const productIds = req.body.products?.map((item) => item.productCode);
+
+      await Product.bulkWrite([
+        {
+          updateMany: {
+            filter: {
+              _id: { $in: productIds },
+              discountProgramId: { $ne: req.params.id },
+            },
+            update: { $set: { discountProgramId: req.params.id } },
+          },
+        },
+        {
+          updateMany: {
+            filter: {
+              _id: { $nin: productIds },
+              discountProgramId: req.params.id,
+            },
+            update: { $set: { discountProgramId: null } },
+          },
+        },
+      ]);
+
       res
         .status(200)
         .send({ newDiscountProgram, message: "Cập nhật voucher thành công." });
@@ -73,10 +104,13 @@ const discountProgramController = {
       const newProducts = [];
 
       for (const product of discountProgram.products) {
-        const findProduct = await Product.findById(product.productCode);
+        const findProduct = await Product.findById(product.productCode, {
+          name: 1,
+          price: 1,
+        });
         newProducts.push({
           productName: findProduct.name,
-          price:findProduct.price,
+          price: findProduct.price,
           ...product._doc,
         });
       }
@@ -96,11 +130,33 @@ const discountProgramController = {
    * CUSTOMER *
    ************/
 
-  getListDiscountProgram: async (req, res, next) => {
+  getListDiscountProgram: async (req, res) => {
     try {
-      const discountPrograms = await DiscountProgram.find();
+      const discountPrograms = await DiscountProgram.find({ status: "active" });
 
-      res.status(200).send({ discountPrograms });
+      const newDiscountPrograms = [];
+
+      for (const program of discountPrograms) {
+        const newProducts = [];
+
+        for (const product of program.products) {
+          const findProduct = await Product.findOne({
+            _id: product.productCode,
+            status: "active",
+          }).select(["-categoryIds", "-description", "-discountProgramId"]);
+          newProducts.push({
+            ...findProduct._doc,
+            ...product._doc,
+            _id: findProduct._id,
+          });
+        }
+        newDiscountPrograms.push({
+          ...program._doc,
+          products: newProducts,
+        });
+      }
+
+      res.status(200).send({ discountPrograms: newDiscountPrograms });
     } catch (err) {
       res.status(500).send(err);
     }

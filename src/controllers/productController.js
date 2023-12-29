@@ -1,5 +1,4 @@
 const Product = require("../models/Product");
-const { removeDiacriticsFromString } = require("../utils/functionHelper");
 
 const productController = {
   //getAll
@@ -85,11 +84,10 @@ const productController = {
 
   getAllProduct: async (req, res) => {
     try {
-
       let products = await Product.find()
         .populate("categoryIds")
         .sort({ createdAt: -1 })
-        .select(['-image', '-description'])
+        .select(["-image", "-description"]);
 
       res.status(200).send({ products });
     } catch (err) {
@@ -108,6 +106,34 @@ const productController = {
       const products = await Product.find().skip(skip).limit(limit);
 
       res.status(200).send({ products });
+    } catch (err) {
+      res.status(500).send(err);
+    }
+  },
+
+  getProductDetails: async (req, res) => {
+    try {
+      const findProduct = await Product.findById(req.params.id).populate(
+        "discountProgramDetails"
+      );
+      if (!findProduct)
+        return res.status(404).send({ message: "Product is not found." });
+      let product = findProduct._doc;
+
+      const discountProgram = findProduct["discountProgramDetails"][0];
+
+      if (discountProgram && discountProgram.products) {
+        for (const p of discountProgram.products) {
+          product = {
+            ...product,
+            promotionPrice: p.promotionPrice,
+            type: p.type,
+            valueDiscount: p.value,
+          }
+        }
+      }
+
+      res.status(200).send({ product });
     } catch (err) {
       res.status(500).send(err);
     }

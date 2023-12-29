@@ -126,7 +126,8 @@ const orderController = {
 
       const orders = await Order.find({ customerCode: customerId })
         .skip(offset)
-        .limit(limit);
+        .limit(limit)
+        .sort({ createdAt: -1 });
       const total = await Order.find({ customerCode: customerId }).count();
 
       res.status(200).send({ orders, total, offset, limit });
