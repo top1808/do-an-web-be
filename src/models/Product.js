@@ -24,11 +24,21 @@ const productSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'Category',
     }],
+    discountProgramId: {
+        type: Schema.Types.ObjectId,
+        ref: 'DiscountProgram',
+    }
 }, { timestamps: true});
 
 productSchema.virtual('categoryList', {
     ref: 'Category',
     localField: "categoryIds",
+    foreignField: '_id',
+})
+
+productSchema.virtual('discountProgramDetails', {
+    ref: 'DiscountProgram',
+    localField: "discountProgramId",
     foreignField: '_id',
 })
 
