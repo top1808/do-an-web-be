@@ -139,12 +139,17 @@ const authController = {
    **************/
   registerCustomer: async (req, res) => {
     try {
+      const findCustomer = await Customer.findOne({ email: req.body?.email });
+
+      if (findCustomer) return res.status(404).send({ message: "Email is exist." });
+
       const password = req.body?.password ? req.body.password : "123456";
       const salt = await bcrypt.genSalt(10);
       const hashed = await bcrypt.hash(password, salt);
 
       const newCustomer = new Customer({
         ...req.body,
+        name: req.body?.name || "User-" + generateID(),
         password: hashed,
         id: req.body?.id ? req.body.id : generateID(),
       });
@@ -158,9 +163,9 @@ const authController = {
 
   loginCustomer: async (req, res) => {
     try {
-      const customer = await Customer.findOne({ username: req.body.username });
+      const customer = await Customer.findOne({ email: req.body.email });
       if (!customer) {
-        return res.status(404).send({ message: "Username is wrong." });
+        return res.status(404).send({ message: "Email is wrong." });
       }
 
       const checkPass = await bcrypt.compare(
