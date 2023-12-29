@@ -104,7 +104,10 @@ const discountProgramController = {
       const newProducts = [];
 
       for (const product of discountProgram.products) {
-        const findProduct = await Product.findById(product.productCode);
+        const findProduct = await Product.findById(product.productCode, {
+          name: 1,
+          price: 1,
+        });
         newProducts.push({
           productName: findProduct.name,
           price: findProduct.price,
@@ -127,11 +130,33 @@ const discountProgramController = {
    * CUSTOMER *
    ************/
 
-  getListDiscountProgram: async (req, res, next) => {
+  getListDiscountProgram: async (req, res) => {
     try {
-      const discountPrograms = await DiscountProgram.find();
+      const discountPrograms = await DiscountProgram.find({ status: "active" });
 
-      res.status(200).send({ discountPrograms });
+      const newDiscountPrograms = [];
+
+      for (const program of discountPrograms) {
+        const newProducts = [];
+
+        for (const product of program.products) {
+          const findProduct = await Product.findOne({
+            _id: product.productCode,
+            status: "active",
+          }).select(["-categoryIds", "-description", "-discountProgramId"]);
+          newProducts.push({
+            ...findProduct._doc,
+            ...product._doc,
+            _id: findProduct._id,
+          });
+        }
+        newDiscountPrograms.push({
+          ...program._doc,
+          products: newProducts,
+        });
+      }
+
+      res.status(200).send({ discountPrograms: newDiscountPrograms });
     } catch (err) {
       res.status(500).send(err);
     }

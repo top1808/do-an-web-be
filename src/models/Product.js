@@ -36,7 +36,7 @@ productSchema.virtual('categoryList', {
     foreignField: '_id',
 })
 
-productSchema.virtual('discountProgramData', {
+productSchema.virtual('discountProgramDetails', {
     ref: 'DiscountProgram',
     localField: "discountProgramId",
     foreignField: '_id',
