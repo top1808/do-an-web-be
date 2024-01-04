@@ -44,31 +44,12 @@ const categoryController = {
       res.status(500).send(err);
     }
   },
-  edit: async (req, res) => {
-    try {
-      res.status(200).send({ message: "Edit category successfully." });
-    } catch (err) {
-      res.status(500).send(err);
-    }
-  },
-
-  //customer api
-  getCategories: async (req, res) => {
-    try {
-      const query = req.query;
-      const skip = query?.skip || 0;
-      const limit = query?.limit || 20;
-      const categories = await Category.find().skip(skip).limit(limit);
-
-      res.status(200).send({ categories });
-    } catch (err) {
-      res.status(500).send(err);
-    }
-  },
 
   getCategoryInfo: async (req, res) => {
     try {
-      const category = await Category.findById(req.params.id);
+      const category = await Category.findOne({
+        _id: req.params.id,
+      });
 
       res.status(200).send({ category });
     } catch (err) {
@@ -95,6 +76,26 @@ const categoryController = {
       res.status(500).send(err);
     }
   },
+
+  //customer api
+  getCategories: async (req, res) => {
+    try {
+      const query = req.query;
+      const skip = query?.skip || 0;
+      const limit = query?.limit || 20;
+      const categories = await Category.find({ status: "active" })
+        .skip(skip)
+        .limit(limit);
+
+      res.status(200).send({ categories });
+    } catch (err) {
+      res.status(500).send(err);
+    }
+  },
+
+
+
+ 
 };
 
 module.exports = categoryController;
