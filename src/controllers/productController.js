@@ -103,7 +103,11 @@ const productController = {
       const query = req.query;
       const skip = query?.skip || 0;
       const limit = query?.limit || 12;
-      const products = await Product.find().skip(skip).limit(limit);
+      const products = await Product.find({
+        status: "active",
+      })
+        .skip(skip)
+        .limit(limit);
 
       res.status(200).send({ products });
     } catch (err) {
@@ -113,9 +117,10 @@ const productController = {
 
   getProductDetails: async (req, res) => {
     try {
-      const findProduct = await Product.findById(req.params.id).populate(
-        "discountProgramDetails"
-      );
+      const findProduct = await Product.findOne({
+        _id: req.params.id,
+        status: "active",
+      }).populate("discountProgramDetails");
       if (!findProduct)
         return res.status(404).send({ message: "Product is not found." });
       let product = findProduct._doc;
@@ -129,7 +134,7 @@ const productController = {
             promotionPrice: p.promotionPrice,
             type: p.type,
             valueDiscount: p.value,
-          }
+          };
         }
       }
 
@@ -182,6 +187,7 @@ const productController = {
       const { categoryIds } = product._doc;
 
       const products = await Product.find({
+        status: "active",
         categoryIds: { $in: categoryIds },
         _id: { $ne: product._id },
       });
@@ -198,6 +204,7 @@ const productController = {
 
       const products = await Product.find({
         name: { $regex: new RegExp(search, "i") },
+        status: "active",
       }).populate("categoryIds");
 
       res.status(200).send({ products });

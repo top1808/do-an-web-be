@@ -86,7 +86,9 @@ const voucherController = {
 
   getListVoucher: async (req, res, next) => {
     try {
-      const vouchers = await Voucher.find();
+      const vouchers = await Voucher.find({
+        status: "active",
+      });
 
       res.status(200).send({ vouchers });
     } catch (err) {
@@ -96,7 +98,7 @@ const voucherController = {
 
   applyVoucher: async (req, res, next) => {
     try {
-      const voucher = await Voucher.findOne({ code: req.body.voucherCode });
+      const voucher = await Voucher.findOne({ code: req.body.voucherCode, status: "active" });
 
       if (!voucher)
         return res.status(404).send({ message: "Voucher not found." });
