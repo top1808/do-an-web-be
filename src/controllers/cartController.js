@@ -35,6 +35,9 @@ const cartController = {
         });
 
         if (findCart) {
+          if (findCart.quantity + data.quantity > 99) {
+            return res.status(400).send({ message: "Bạn chỉ có thể thêm số lượng tối đa 99 trên mỗi sản phẩm." });
+          }
           await Cart.updateOne(
             {
               _id: findCart._id,
@@ -46,6 +49,9 @@ const cartController = {
             }
           );
         } else {
+          if (data.quantity > 99) {
+            return res.status(400).send({ message: "Bạn chỉ có thể thêm số lượng tối đa 99 trên mỗi sản phẩm." });
+          }
           const newCartItem = new Cart(data);
           await newCartItem.save();
         }
