@@ -2,6 +2,7 @@ const Category = require("../models/Category");
 const Customer = require("../models/Customer");
 const Order = require("../models/Order");
 const Product = require("../models/Product");
+const notificationController = require("./notificationController");
 
 const statisticController = {
   getStatistic: async (req, res) => {
