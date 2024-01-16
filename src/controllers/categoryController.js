@@ -1,12 +1,13 @@
 const Category = require("../models/Category");
 const Product = require("../models/Product");
+const notificationController = require("./notificationController");
 
 const categoryController = {
   //admin api
   //getAll
   getAll: async (req, res) => {
     try {
-      const categories = await Category.find();
+      const categories = await Category.find().sort({ createdAt: -1 });
       res.status(200).send({ categories });
     } catch (err) {
       res.status(500).send(err);
@@ -20,7 +21,18 @@ const categoryController = {
       }).select(["-image", "-description"]);
 
       if (products?.length === 0) {
-        const category = await Category.deleteOne({ _id: req.params.id });
+        const category = await Category.findOneAndDelete({
+          _id: req.params.id,
+        });
+        const notification = {
+          title: "Delete Notification",
+          body: (req.user?.name || "No name") + " deleted category " + category["name"],
+          image: category["image"] || "",
+          link: "/category",
+          fromUserId: req.user?._id,
+          toUserId: "admin",
+        };
+        await notificationController.create(req, notification);
         return res
           .status(200)
           .send({ message: "Delete category successfully." });
@@ -92,10 +104,6 @@ const categoryController = {
       res.status(500).send(err);
     }
   },
-
-
-
- 
 };
 
 module.exports = categoryController;
