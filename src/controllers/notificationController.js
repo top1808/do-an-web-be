@@ -1,3 +1,4 @@
+const pusher = require("../config/pusher");
 const Notification = require("../models/Notification");
 const firebase = require("firebase-admin");
 
@@ -10,13 +11,13 @@ const notificationController = {
 
       const customerId = req.header("userId") || "admin";
 
-      const notifications = await Notification.find({ toUserId: customerId })
+      const data = await Notification.find({ toUserId: customerId })
         .sort({ createdAt: -1 })
         .skip(offset)
         .limit(limit);
       const total = await Notification.find().count();
 
-      res.status(200).send({ notifications, total, offset, limit });
+      res.status(200).send({ data, total, offset, limit });
     } catch (err) {
       res.status(500).send(err);
     }
@@ -60,9 +61,26 @@ const notificationController = {
       return err;
     }
   },
+  //read
+  read: async (req, res) => {
+    try {
+      await Notification.updateOne(
+        {
+          _id: req.params.id,
+        },
+        {
+          $set: { isRead: true },
+        }
+      );
+      res.status(200).send({ message: "Read notification." });
+    } catch (err) {
+      res.status(500).send(err);
+    }
+  },
 
   onNotification: async (message) => {
     try {
+      await pusher.trigger("notifications", "notify", message);
       const response = await firebase.messaging().send(message);
       return response;
     } catch (err) {
