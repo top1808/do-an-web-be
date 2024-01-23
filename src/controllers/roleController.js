@@ -139,6 +139,27 @@ const roleController = {
       res.status(500).send(err);
     }
   },
+  checkPermissionUrl: async (userId, url) => {
+    try {
+      const permission = await Permission.findOne({ method: "get", url: url });
+
+      if (!permission) return true;
+
+      const user = await User.findById(userId);
+      if (!user) return false;
+
+      const hasPermission = await RolePermission.findOne({
+        roleId: user.roleId,
+        permissionId: permission._id,
+      });
+
+      if (hasPermission) return true;
+
+      return false;
+    } catch (err) {
+      return false;
+    } 
+  }
 };
 
 module.exports = roleController;

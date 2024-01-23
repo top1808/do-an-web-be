@@ -1,5 +1,6 @@
 const DiscountProgram = require("../models/DiscountProgram");
 const Product = require("../models/Product");
+const notificationController = require("./notificationController");
 
 const discountProgramController = {
   getData: async (req, res, next) => {
@@ -30,6 +31,16 @@ const discountProgramController = {
         { $set: { discountProgramId: null } }
       );
 
+      const notification = {
+        title: "Delete notification",
+        body: (req.user?.name || "No name") + " deleted discount program " + discountProgram["name"],
+        image: "",
+        link: "/discount-program",
+        fromUserId: req.user?._id,
+        toUserId: "admin",
+      };
+      await notificationController.create(req, notification);
+
       res.status(200).send({ message: "Delete discount program success." });
     } catch (err) {
       res.status(500).send(err);
@@ -47,6 +58,16 @@ const discountProgramController = {
         { $set: { discountProgramId: newDiscountProgram._id } }
       );
 
+      const notification = {
+        title: "Create notification",
+        body: (req.user?.name || "No name") + " created discount program " + req.body["name"],
+        image: "",
+        link: "/discount-program",
+        fromUserId: req.user?._id,
+        toUserId: "admin",
+      };
+      await notificationController.create(req, notification);
+
       res.status(200).send({ message: "Create discount program success." });
     } catch (err) {
       res.status(500).send(err);
@@ -57,7 +78,7 @@ const discountProgramController = {
     try {
       const updateField = { ...req.body };
 
-      const newDiscountProgram = await DiscountProgram.updateOne(
+      const newDiscountProgram = await DiscountProgram.findOneAndUpdate(
         {
           _id: req.params.id,
         },
@@ -88,6 +109,16 @@ const discountProgramController = {
           },
         },
       ]);
+
+      const notification = {
+        title: "Edit notification",
+        body: (req.user?.name || "No name") + " editted discount program " + newDiscountProgram["name"],
+        image: "",
+        link: "/discount-program",
+        fromUserId: req.user?._id,
+        toUserId: "admin",
+      };
+      await notificationController.create(req, notification);
 
       res
         .status(200)

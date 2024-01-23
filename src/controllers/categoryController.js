@@ -25,7 +25,7 @@ const categoryController = {
           _id: req.params.id,
         });
         const notification = {
-          title: "Delete Notification",
+          title: "Delete notification",
           body: (req.user?.name || "No name") + " deleted category " + category["name"],
           image: category["image"] || "",
           link: "/category",
@@ -51,6 +51,16 @@ const categoryController = {
       const newCategory = new Category(req.body);
       await newCategory.save();
 
+      const notification = {
+        title: "Create notification",
+        body: (req.user?.name || "No name") + " created category " + newCategory["name"],
+        image: newCategory["image"] || "",
+        link: "/category",
+        fromUserId: req.user?._id,
+        toUserId: "admin",
+      };
+      await notificationController.create(req, notification);
+
       res.status(200).send({ message: "Create category successfully." });
     } catch (err) {
       res.status(500).send(err);
@@ -73,7 +83,7 @@ const categoryController = {
     try {
       const updateField = req.body;
 
-      const newCategory = await Category.updateOne(
+      const newCategory = await Category.findOneAndUpdate(
         {
           _id: req.params.id,
         },
@@ -81,6 +91,17 @@ const categoryController = {
           $set: updateField,
         }
       );
+
+      const notification = {
+        title: "Edit notification",
+        body: (req.user?.name || "No name") + " edited category " + newCategory["name"],
+        image: newCategory["image"] || "",
+        link: "/category",
+        fromUserId: req.user?._id,
+        toUserId: "admin",
+      };
+      await notificationController.create(req, notification);
+
       res
         .status(200)
         .send({ newCategory, message: "Update category successful." });

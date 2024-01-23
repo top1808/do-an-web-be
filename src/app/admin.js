@@ -16,9 +16,11 @@ const discountProgramRoute = require('../routes/admin/discountProgram');
 const notificationRoute = require('../routes/admin/notification');
 
 router.use("/auth", authRoute);
-router.use("/notification", notificationRoute);
 
 router.use(middlewareController.verifyToken);
+
+router.use("/notification", notificationRoute);
+
 router.use(middlewareController.checkPermission);
 
 router.use("/authorize", roleRoute);
