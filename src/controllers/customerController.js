@@ -1,6 +1,7 @@
 const Customer = require("../models/Customer");
 const bcrypt = require("bcrypt");
 const { generateID } = require("../utils/functionHelper");
+const notificationController = require("./notificationController");
 
 const customerController = {
   //getAll
@@ -21,9 +22,18 @@ const customerController = {
   //delete
   delete: async (req, res, next) => {
     try {
-      const customer = await Customer.findById(req.params.id);
+      const customer = await Customer.findOneAndDelete(req.params.id);
 
-      await customer.deleteOne();
+      const notification = {
+        title: "Delete notification",
+        body: (req.user?.name || "No name") + " deleted customer " + customer["name"],
+        image: customer["image"] || "",
+        link: "/customer",
+        fromUserId: req.user?._id,
+        toUserId: "admin",
+      };
+      await notificationController.create(req, notification);
+
       res.status(200).send({ message: "Delete customer successfully." });
     } catch (err) {
       res.status(500).send(err);
@@ -42,6 +52,16 @@ const customerController = {
       });
 
       const customer = await newCustomer.save();
+
+      const notification = {
+        title: "Create notification",
+        body: (req.user?.name || "No name") + " created customer " + newCustomer["name"],
+        image: newCustomer["image"] || "",
+        link: "/customer",
+        fromUserId: req.user?._id,
+        toUserId: "admin",
+      };
+      await notificationController.create(req, notification);
 
       res
         .status(200)
@@ -62,7 +82,7 @@ const customerController = {
       const updateField = { ...req.body, password: hashed };
       if (!hashed) delete updateField.password;
 
-      const newCustomer = await Customer.updateOne(
+      const newCustomer = await Customer.findOneAndUpdate(
         {
           id: req.params.id,
         },
@@ -70,6 +90,17 @@ const customerController = {
           $set: updateField,
         }
       );
+
+      const notification = {
+        title: "Edit notification",
+        body: (req.user?.name || "No name") + " edited customer " + newCustomer["name"],
+        image: newCustomer["image"] || "",
+        link: "/customer",
+        fromUserId: req.user?._id,
+        toUserId: "admin",
+      };
+      await notificationController.create(req, notification);
+
       res
         .status(200)
         .send({ newCustomer, message: "Update customer successful." });

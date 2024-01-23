@@ -1,4 +1,5 @@
 const Product = require("../models/Product");
+const notificationController = require("./notificationController");
 
 const productController = {
   //getAll
@@ -33,6 +34,17 @@ const productController = {
     try {
       const product = await Product.findById(req.params.id);
       await product.deleteOne();
+
+      const notification = {
+        title: "Delete notification",
+        body: (req.user?.name || "No name") + " deleted product " + product["name"],
+        image: "",
+        link: "/product",
+        fromUserId: req.user?._id,
+        toUserId: "admin",
+      };
+      await notificationController.create(req, notification);
+
       res.status(200).send({ message: "Delete product successfully." });
     } catch (err) {
       res.status(500).send(err);
@@ -46,6 +58,16 @@ const productController = {
 
       await Product.findById(newProduct._id).populate("categoryList");
 
+      const notification = {
+        title: "Create notification",
+        body: (req.user?.name || "No name") + " created product " + newProduct["name"],
+        image: "",
+        link: "/product",
+        fromUserId: req.user?._id,
+        toUserId: "admin",
+      };
+      await notificationController.create(req, notification);
+
       res.status(200).send({ message: "Create product successfully." });
     } catch (err) {
       res.status(500).send(err);
@@ -56,7 +78,7 @@ const productController = {
     try {
       const updateField = req.body;
 
-      const newProduct = await Product.updateOne(
+      const newProduct = await Product.findOneAndUpdate(
         {
           _id: req.params.id,
         },
@@ -64,6 +86,17 @@ const productController = {
           $set: updateField,
         }
       );
+
+      const notification = {
+        title: "Edit notification",
+        body: (req.user?.name || "No name") + " editted product " + newProduct["name"],
+        image: "",
+        link: "/product",
+        fromUserId: req.user?._id,
+        toUserId: "admin",
+      };
+      await notificationController.create(req, notification);
+
       res
         .status(200)
         .send({ newProduct, message: "Update product successful." });

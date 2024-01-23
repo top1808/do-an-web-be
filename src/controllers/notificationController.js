@@ -1,5 +1,6 @@
 const pusher = require("../config/pusher");
 const Notification = require("../models/Notification");
+const roleController = require("./roleController");
 const firebase = require("firebase-admin");
 
 const notificationController = {
@@ -9,15 +10,52 @@ const notificationController = {
       const offset = Number(query?.offset) || 0;
       const limit = Number(query?.limit) || 20;
 
-      const customerId = req.header("userId") || "admin";
+      const currentUser = req.user;
 
-      const data = await Notification.find({ toUserId: customerId })
+      const data = await Notification.find({
+        toUserId: "admin",
+        fromUserId: { $ne: currentUser?._id },
+      })
         .sort({ createdAt: -1 })
         .skip(offset)
-        .limit(limit);
-      const total = await Notification.find().count();
+        .limit(limit)
+        .then(async (notifications) => {
+          const filteredData = await Promise.all(
+            notifications.map(async (notification) => {
+              const hasPermission = await roleController.checkPermissionUrl(
+                currentUser?._id,
+                notification.link
+              );
+              return hasPermission ? notification : null;
+            })
+          );
+          return filteredData.filter((notification) => notification !== null);
+        });
+      const total = await Notification.find({
+        toUserId: "admin",
+        fromUserId: { $ne: currentUser?._id },
+      }).then(async (notifications) => {
+        const filteredData = await Promise.all(
+          notifications.map(async (notification) => {
+            const hasPermission = await roleController.checkPermissionUrl(
+              currentUser?._id,
+              notification.link
+            );
+            return hasPermission ? notification : null;
+          })
+        );
+        return filteredData.filter((notification) => notification !== null)
+          ?.length;
+      });
 
-      res.status(200).send({ data, total, offset, limit });
+      const pagination = {
+        total,
+        offset,
+        limit,
+        page: offset / limit + 1,
+      };
+
+      res.status(200).send({ data, pagination });
     } catch (err) {
       res.status(500).send(err);
     }
@@ -80,9 +118,16 @@ const notificationController = {
 
   onNotification: async (message) => {
     try {
-      await pusher.trigger("notifications", "notify", message);
-      const response = await firebase.messaging().send(message);
-      return response;
+      const checkPermission = roleController.checkPermissionUrl(
+        message.data?.fromUser,
+        message.data?.link
+      );
+      if (checkPermission) {
+        await pusher.trigger("notifications", "notify", message);
+        const response = await firebase.messaging().send(message);
+        return response;
+      }
+      return null;
     } catch (err) {
       return err;
     }

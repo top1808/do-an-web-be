@@ -1,6 +1,7 @@
 const RefreshToken = require("../models/RefreshToken");
 const User = require("../models/User");
 const bcrypt = require("bcrypt");
+const notificationController = require("./notificationController");
 
 const userController = {
   //getAllUser
@@ -28,6 +29,17 @@ const userController = {
       if (refreshToken) await refreshToken.deleteOne();
 
       await user.deleteOne();
+
+      const notification = {
+        title: "Delete notification",
+        body: (req.user?.name || "No name") + " deleted user " + user["name"],
+        image: "",
+        link: "/user",
+        fromUserId: req.user?._id,
+        toUserId: "admin",
+      };
+      await notificationController.create(req, notification);
+
       res.status(200).send({ message: "Delete user successfully." });
     } catch (err) {
       res.status(500).send(err);
@@ -45,6 +57,16 @@ const userController = {
       });
 
       const user = await newUser.save();
+
+      const notification = {
+        title: "Create notification",
+        body: (req.user?.name || "No name") + " created user " + newUser["name"],
+        image: "",
+        link: "/user",
+        fromUserId: req.user?._id,
+        toUserId: "admin",
+      };
+      await notificationController.create(req, notification);
 
       res.status(200).send({ user, message: "Create user successful." });
     } catch (err) {
@@ -74,7 +96,7 @@ const userController = {
       const updateField = { ...req.body, password: hashed };
       if (!hashed) delete updateField.password;
 
-      const newUser = await User.updateOne(
+      const newUser = await User.findOneAndUpdate(
         {
           _id: req.params.id,
         },
@@ -82,6 +104,17 @@ const userController = {
           $set: updateField,
         }
       );
+
+      const notification = {
+        title: "Edit notification",
+        body: (req.user?.name || "No name") + " editted user " + newUser["name"],
+        image: "",
+        link: "/user",
+        fromUserId: req.user?._id,
+        toUserId: "admin",
+      };
+      await notificationController.create(req, notification);
+
       res.status(200).send({ newUser, message: "Update user successful." });
     } catch (err) {
       res.status(500).send(err);
@@ -107,6 +140,16 @@ const userController = {
       const hashed = await bcrypt.hash(req.body.newPassword, salt);
 
       await user.updateOne({ password: hashed });
+
+      const notification = {
+        title: "Change password notification",
+        body: (req.user?.name || "No name") + " changed password user " + user["name"],
+        image: "",
+        link: "/user",
+        fromUserId: req.user?._id,
+        toUserId: "admin",
+      };
+      await notificationController.create(req, notification);
 
       res.status(200).send({ message: "Change password successfully." });
     } catch (err) {
