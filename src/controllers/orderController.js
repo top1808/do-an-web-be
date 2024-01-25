@@ -125,7 +125,6 @@ const orderController = {
       const newOrder = await Order.findOneAndUpdate(
         {
           _id: req.params.id,
-          customerCode: customerId,
         },
         {
           $set: updateFields,
