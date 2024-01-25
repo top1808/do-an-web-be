@@ -30,7 +30,10 @@ const orderController = {
 
       const notification = {
         title: "Delete notification",
-        body: (req.user?.name || "No name") + " deleted order " + order["orderCode"],
+        body:
+          (req.user?.name || "No name") +
+          " deleted order " +
+          order["orderCode"],
         image: "",
         link: "/order",
         fromUserId: req.user?._id,
@@ -54,7 +57,10 @@ const orderController = {
 
       const notification = {
         title: "Create notification",
-        body: (req.user?.name || "No name") + " created order " + newOrder["orderCode"],
+        body:
+          (req.user?.name || "No name") +
+          " created order " +
+          newOrder["orderCode"],
         image: "",
         link: "/order",
         fromUserId: req.user?._id,
@@ -83,7 +89,10 @@ const orderController = {
 
       const notification = {
         title: "Edit notification",
-        body: (req.user?.name || "No name") + " editted order " + newOrder["orderCode"],
+        body:
+          (req.user?.name || "No name") +
+          " editted order " +
+          newOrder["orderCode"],
         image: "",
         link: "/order",
         fromUserId: req.user?._id,
@@ -99,6 +108,8 @@ const orderController = {
 
   changeStatus: async (req, res) => {
     try {
+      const customerId = await req.header("userId");
+
       const updateFields = {
         status: req.body.status,
         deliveryAddress: req.body?.deliveryAddress || "",
@@ -111,14 +122,44 @@ const orderController = {
         if (!updateFields[key]) delete updateFields[key];
       }
 
-      await Order.updateOne(
+      const newOrder = await Order.findOneAndUpdate(
         {
           _id: req.params.id,
+          customerCode: customerId,
         },
         {
           $set: updateFields,
         }
       );
+
+      const notificationAdmin = {
+        title: "Order notification",
+        body:
+          (customerId
+            ? `Customer ${newOrder["customerName"]}`
+            : (req.user?.name || "No name")) +
+          ` ${updateFields.status} order ` +
+          newOrder["orderCode"],
+        image: "",
+        link: "/order",
+        fromUserId: customerId || req.user?._id,
+        toUserId: "admin",
+      };
+      await notificationController.create(req, notificationAdmin);
+
+      if (!customerId) {
+        //Notification customer
+        const notificationCustomer = {
+          title: "Order notification",
+          body: `Your order ${newOrder["orderCode"]} is ${updateFields.status}`,
+          image: "",
+          link: "/profile/purchased",
+          fromUserId: req.user?._id,
+          toUserId: newOrder["customerCode"],
+        };
+        await notificationController.create(req, notificationCustomer);
+      }
+
       res.status(200).send({
         id: req.params.id,
         message: "Change status order successful.",
