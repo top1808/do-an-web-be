@@ -151,6 +151,42 @@ const notificationController = {
       res.status(500).send(err);
     }
   },
+
+  // CUSTOMER
+
+  getCustomerNotifications: async (req, res) => {
+    try {
+      const query = req.query;
+      const offset = Number(query?.offset) || 0;
+      const limit = Number(query?.limit) || 10;
+
+      const customerId = await req.header("userId");
+
+      const data = await Notification.find({
+        $or: [{ toUserId: customerId }, { toUserId: "all_customer" }],
+        fromUserId: { $ne: customerId },
+      })
+        .sort({ createdAt: -1 })
+        .skip(offset)
+        .limit(limit);
+    
+      const total = await Notification.find({
+        $or: [{ toUserId: customerId }, { toUserId: "all_customer" }],
+        fromUserId: { $ne: customerId },
+      }).count();
+
+      const pagination = {
+        total,
+        offset,
+        limit,
+        page: offset / limit + 1,
+      };
+
+      res.status(200).send({ data, pagination });
+    } catch (err) {
+      res.status(500).send(err);
+    }
+  },
 };
 
 module.exports = notificationController;
