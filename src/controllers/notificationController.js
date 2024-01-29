@@ -86,13 +86,18 @@ const notificationController = {
         data: {
           link: notification?.link,
           image: notification?.image,
-          fromUser: req.user?._id || "",
+          fromUser: notification?.fromUserId || "",
           toUser: notification?.toUserId || "admin",
         },
         token: registrationToken,
       };
 
-      await notificationController.onNotification(message);
+      if (message?.data?.toUser === "admin") {
+        await notificationController.onNotification(message);
+      } else {
+        await notificationController.onSalesNotification(message);
+      }
+
 
       return notification;
     } catch (err) {
@@ -144,7 +149,8 @@ const notificationController = {
         token: registrationToken,
       };
 
-      const response = await notificationController.onNotification(message);
+      // const response = await notificationController.onNotification(message);
+      await notificationController.onSalesNotification(message);
 
       res.status(200).send({ response });
     } catch (err) {
@@ -169,7 +175,7 @@ const notificationController = {
         .sort({ createdAt: -1 })
         .skip(offset)
         .limit(limit);
-    
+
       const total = await Notification.find({
         $or: [{ toUserId: customerId }, { toUserId: "all_customer" }],
         fromUserId: { $ne: customerId },
@@ -185,6 +191,16 @@ const notificationController = {
       res.status(200).send({ data, pagination });
     } catch (err) {
       res.status(500).send(err);
+    }
+  },
+
+  onSalesNotification: async (message) => {
+    try {
+      await pusher.trigger("notifications", "sales_notify", message);
+      const response = await firebase.messaging().send(message);
+      return response;
+    } catch (err) {
+      return err;
     }
   },
 };
