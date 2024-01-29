@@ -13,10 +13,14 @@ const voucherRoute = require('../routes/admin/voucher');
 
 const statisticRoute = require('../routes/admin/statistic');
 const discountProgramRoute = require('../routes/admin/discountProgram');
+const notificationRoute = require('../routes/admin/notification');
 
 router.use("/auth", authRoute);
 
 router.use(middlewareController.verifyToken);
+
+router.use("/notification", notificationRoute);
+
 router.use(middlewareController.checkPermission);
 
 router.use("/authorize", roleRoute);

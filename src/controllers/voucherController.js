@@ -1,4 +1,5 @@
 const Voucher = require("../models/Voucher");
+const notificationController = require("./notificationController");
 
 const voucherController = {
   getData: async (req, res, next) => {
@@ -24,6 +25,17 @@ const voucherController = {
       const voucher = await Voucher.findById(req.params.id);
 
       await voucher.deleteOne();
+
+      const notification = {
+        title: "Delete notification",
+        body: (req.user?.name || "No name") + " deleted voucher " + voucher["name"],
+        image: "",
+        link: "/voucher",
+        fromUserId: req.user?._id,
+        toUserId: "admin",
+      };
+      await notificationController.create(req, notification);
+
       res.status(200).send({ message: "Xóa voucher thành công." });
     } catch (err) {
       res.status(500).send(err);
@@ -44,6 +56,16 @@ const voucherController = {
 
       const voucher = await newVoucher.save();
 
+      const notification = {
+        title: "Create notification",
+        body: (req.user?.name || "No name") + " created voucher " + newVoucher["name"],
+        image: "",
+        link: "/voucher",
+        fromUserId: req.user?._id,
+        toUserId: "admin",
+      };
+      await notificationController.create(req, notification);
+
       res.status(200).send({ voucher, message: "Tạo mới voucher thành công." });
     } catch (err) {
       res.status(500).send(err);
@@ -62,6 +84,17 @@ const voucherController = {
           $set: updateField,
         }
       );
+
+
+      const notification = {
+        title: "Edit notification",
+        body: (req.user?.name || "No name") + " editted voucher " + newVoucher["name"],
+        image: "",
+        link: "/voucher",
+        fromUserId: req.user?._id,
+        toUserId: "admin",
+      };
+      await notificationController.create(req, notification);
 
       res
         .status(200)
