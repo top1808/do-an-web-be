@@ -6,6 +6,7 @@ const cookieParser = require("cookie-parser");
 const database = require("./src/config/database");
 const firebase = require("./src/config/firebase");
 const pusher = require("./src/config/pusher");
+const nodeSchedule = require("./src/config/nodeSchedule");
 const adminRoutes = require("./src/app/admin");
 const customerRoutes = require("./src/app/customer");
 const webRoutes = require("./src/app/web");
