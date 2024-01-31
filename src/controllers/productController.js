@@ -37,7 +37,8 @@ const productController = {
 
       const notification = {
         title: "Delete notification",
-        body: (req.user?.name || "No name") + " deleted product " + product["name"],
+        body:
+          (req.user?.name || "No name") + " deleted product " + product["name"],
         image: "",
         link: "/product",
         fromUserId: req.user?._id,
@@ -60,7 +61,10 @@ const productController = {
 
       const notification = {
         title: "Create notification",
-        body: (req.user?.name || "No name") + " created product " + newProduct["name"],
+        body:
+          (req.user?.name || "No name") +
+          " created product " +
+          newProduct["name"],
         image: "",
         link: "/product",
         fromUserId: req.user?._id,
@@ -89,7 +93,10 @@ const productController = {
 
       const notification = {
         title: "Edit notification",
-        body: (req.user?.name || "No name") + " editted product " + newProduct["name"],
+        body:
+          (req.user?.name || "No name") +
+          " editted product " +
+          newProduct["name"],
         image: "",
         link: "/product",
         fromUserId: req.user?._id,
@@ -233,12 +240,17 @@ const productController = {
 
   searchProducts: async (req, res) => {
     try {
-      const search = req.params.search;
+      const search = req.params?.search;
 
-      const products = await Product.find({
-        name: { $regex: new RegExp(search, "i") },
+      let query = {
         status: "active",
-      }).populate("categoryIds");
+      };
+
+      if (search.trim() !== "") {
+        query.name = { $regex: new RegExp(search, "i") };
+      }
+
+      const products = await Product.find(query).populate("categoryIds");
 
       res.status(200).send({ products });
     } catch (err) {

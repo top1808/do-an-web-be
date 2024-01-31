@@ -152,7 +152,7 @@ const authController = {
 
       const newCustomer = new Customer({
         ...req.body,
-        name: req.body?.name || "User-" + generateID(),
+        name: req.body?.name || "No name",
         password: hashed,
         id: req.body?.id ? req.body.id : generateID(),
       });

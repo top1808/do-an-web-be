@@ -38,7 +38,7 @@ const categoryController = {
           .send({ message: "Delete category successfully." });
       } else {
         return res
-          .status(406)
+          .status(409)
           .send({ message: "Category contains product. Cannot delete." });
       }
     } catch (err) {
