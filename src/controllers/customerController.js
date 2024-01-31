@@ -2,6 +2,7 @@ const Customer = require("../models/Customer");
 const bcrypt = require("bcrypt");
 const { generateID } = require("../utils/functionHelper");
 const notificationController = require("./notificationController");
+const Order = require("../models/Order");
 
 const customerController = {
   //getAll
@@ -22,7 +23,14 @@ const customerController = {
   //delete
   delete: async (req, res, next) => {
     try {
-      const customer = await Customer.findOneAndDelete(req.params.id);
+      const customer = await Customer.findById(req.params.id);
+      const ordersOfCustomer = await Order.find({ customerCode: customer?.id, status: { $nin: ["received", "canceled"]} })
+
+      if (ordersOfCustomer?.length > 0) {
+        return res.status(409).send({ message: "The customer has an order." });
+      }
+
+      await customer.deleteOne();
 
       const notification = {
         title: "Delete notification",
@@ -36,6 +44,7 @@ const customerController = {
 
       res.status(200).send({ message: "Delete customer successfully." });
     } catch (err) {
+      console.log("🚀 ~ delete: ~ err:", err)
       res.status(500).send(err);
     }
   },

@@ -31,6 +31,8 @@ const notificationController = {
           );
           return filteredData.filter((notification) => notification !== null);
         });
+
+      let totalNew = 0;
       const total = await Notification.find({
         toUserId: "admin",
         fromUserId: { $ne: currentUser?._id },
@@ -44,6 +46,9 @@ const notificationController = {
             return hasPermission ? notification : null;
           })
         );
+        totalNew = filteredData.filter(
+          (notification) => notification !== null && !notification?.isRead
+        )?.length;
         return filteredData.filter((notification) => notification !== null)
           ?.length;
       });
@@ -53,6 +58,7 @@ const notificationController = {
         offset,
         limit,
         page: offset / limit + 1,
+        totalNew,
       };
 
       res.status(200).send({ data, pagination });
@@ -97,7 +103,6 @@ const notificationController = {
       } else {
         await notificationController.onSalesNotification(message);
       }
-
 
       return notification;
     } catch (err) {
@@ -181,11 +186,18 @@ const notificationController = {
         fromUserId: { $ne: customerId },
       }).count();
 
+      const totalNew = await Notification.find({
+        $or: [{ toUserId: customerId }, { toUserId: "all_customer" }],
+        fromUserId: { $ne: customerId },
+        isRead: { $ne: true },
+      }).count();
+
       const pagination = {
         total,
         offset,
         limit,
         page: offset / limit + 1,
+        totalNew,
       };
 
       res.status(200).send({ data, pagination });
