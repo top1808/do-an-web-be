@@ -10,6 +10,7 @@ const productController = {
       const limit = Number(query?.limit) || 10;
 
       let products = await Product.find()
+        .select(["-image", "-description"])
         .populate("categoryIds")
         .sort({ createdAt: -1 })
         .skip(offset)

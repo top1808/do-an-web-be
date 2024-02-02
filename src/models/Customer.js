@@ -49,6 +49,9 @@ const customerSchema = new mongoose.Schema(
       max: 10,
       default: "",
     },
+    lastLogin: {
+      type: String,
+    }
   },
   { timestamps: true }
 );

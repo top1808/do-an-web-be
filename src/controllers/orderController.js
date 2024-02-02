@@ -161,7 +161,7 @@ const orderController = {
 
       res.status(200).send({
         id: req.params.id,
-        message: "Change status order successful.",
+        message: `${updateFields.status?.toUpperCase()} order successful.`,
       });
     } catch (err) {
       res.status(500).send(err);
