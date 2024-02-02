@@ -11,7 +11,10 @@ const userController = {
       const offset = Number(query?.offset) || 0;
       const limit = Number(query?.limit) || 20;
 
-      const users = await User.find().skip(offset).limit(limit);
+      const users = await User.find()
+        .sort({ createdAt: -1 })
+        .skip(offset)
+        .limit(limit);
       const total = await User.find().count();
 
       res.status(200).send({ users, total, offset, limit });
@@ -60,7 +63,8 @@ const userController = {
 
       const notification = {
         title: "Create notification",
-        body: (req.user?.name || "No name") + " created user " + newUser["name"],
+        body:
+          (req.user?.name || "No name") + " created user " + newUser["name"],
         image: "",
         link: "/user",
         fromUserId: req.user?._id,
@@ -107,7 +111,8 @@ const userController = {
 
       const notification = {
         title: "Edit notification",
-        body: (req.user?.name || "No name") + " editted user " + newUser["name"],
+        body:
+          (req.user?.name || "No name") + " editted user " + newUser["name"],
         image: "",
         link: "/user",
         fromUserId: req.user?._id,
@@ -123,10 +128,8 @@ const userController = {
 
   changePassword: async (req, res) => {
     try {
-
-      const user = await User.findById(req.params.id)
-      if (!user)
-        return res.status(404).send({ message: "User not found." });
+      const user = await User.findById(req.params.id);
+      if (!user) return res.status(404).send({ message: "User not found." });
 
       const { password, ...rest } = user._doc;
 
@@ -143,7 +146,10 @@ const userController = {
 
       const notification = {
         title: "Change password notification",
-        body: (req.user?.name || "No name") + " changed password user " + user["name"],
+        body:
+          (req.user?.name || "No name") +
+          " changed password user " +
+          user["name"],
         image: "",
         link: "/user",
         fromUserId: req.user?._id,

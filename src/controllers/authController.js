@@ -4,7 +4,7 @@ const jwt = require("jsonwebtoken");
 const RefreshToken = require("../models/RefreshToken");
 const Role = require("../models/Role");
 const Customer = require("../models/Customer");
-const { generateID } = require("../utils/functionHelper");
+const { generateID, formatDateTimeString } = require("../utils/functionHelper");
 
 const authController = {
   //GENERATE TOKEN
@@ -77,6 +77,15 @@ const authController = {
         path: "/",
       });
 
+      await User.updateOne(
+        {
+          username: req.body.username,
+        },
+        {
+          $set: { lastLogin: formatDateTimeString() },
+        }
+      );
+
       res.status(200).send({ ...rest, accessToken });
     } catch (err) {
       res.status(500).send(err);
@@ -143,7 +152,8 @@ const authController = {
     try {
       const findCustomer = await Customer.findOne({ email: req.body?.email });
 
-      if (findCustomer) return res.status(404).send({ message: "Email is exist." });
+      if (findCustomer)
+        return res.status(404).send({ message: "Email is exist." });
 
       const password = req.body?.password ? req.body.password : "123456";
       const salt = await bcrypt.genSalt(10);
