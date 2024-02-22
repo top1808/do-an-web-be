@@ -1,4 +1,9 @@
 const Product = require("../models/Product");
+const ProductSKU = require("../models/ProductSKU");
+const {
+  generateBarcode,
+  addElementToArrayUnique,
+} = require("../utils/functionHelper");
 const notificationController = require("./notificationController");
 
 const productController = {
@@ -36,6 +41,8 @@ const productController = {
       const product = await Product.findById(req.params.id);
       await product.deleteOne();
 
+      await ProductSKU.deleteMany({ productId: req.params.id });
+
       const notification = {
         title: "Delete notification",
         body:
@@ -56,6 +63,35 @@ const productController = {
   create: async (req, res) => {
     try {
       const newProduct = new Product(req.body);
+      newProduct["minPrice"] = 0;
+      newProduct["maxPrice"] = 0;
+      const productSKUBarcodes = [];
+
+      if (req.body.productSKU) {
+        for (const key in req.body.productSKU) {
+          const parseKey = JSON.parse(key);
+          const barcode = generateBarcode();
+          productSKUBarcodes.push(barcode);
+
+          const newProductSKU = new ProductSKU({
+            ...parseKey,
+            option2: parseKey?.option2 || "",
+            price: req.body.productSKU[key],
+            barcode,
+            productId: newProduct._id,
+          });
+          await newProductSKU.save();
+        }
+
+        newProduct["minPrice"] = Math.min(
+          ...Object.values(req.body.productSKU)
+        );
+        newProduct["maxPrice"] = Math.max(
+          ...Object.values(req.body.productSKU)
+        );
+        newProduct["price"] = null;
+      }
+      newProduct["productSKUBarcodes"] = productSKUBarcodes;
       await newProduct.save();
 
       await Product.findById(newProduct._id).populate("categoryList");
@@ -82,6 +118,65 @@ const productController = {
   editProduct: async (req, res) => {
     try {
       const updateField = req.body;
+      const productId = req.params.id;
+      const productSKUBarcodes = [];
+
+      updateField["minPrice"] = 0;
+      updateField["maxPrice"] = 0;
+
+      if (updateField.productSKU) {
+        let arrayOption1 = [];
+        let arrayOption2 = [];
+        for (const key in updateField.productSKU) {
+          const parseKey = JSON.parse(key);
+          addElementToArrayUnique(arrayOption1, parseKey?.option1);
+          if (parseKey?.option2) {
+            addElementToArrayUnique(arrayOption2, parseKey?.option2);
+          }
+          const findProductSKU = await ProductSKU.findOneAndUpdate(
+            {
+              productId: productId,
+              option1: parseKey.option1,
+              option2: parseKey?.option2 || "",
+            },
+            {
+              $set: {
+                price: updateField.productSKU[key],
+              },
+            }
+          );
+
+          if (!findProductSKU) {
+            const barcode = generateBarcode();
+            productSKUBarcodes.push(barcode);
+            const newProductSKU = new ProductSKU({
+              ...parseKey,
+              price: updateField.productSKU[key],
+              barcode,
+            });
+            await newProductSKU.save();
+          } else {
+            productSKUBarcodes.push(findProductSKU.barcode);
+          }
+        }
+        let query = {
+          productId: productId,
+          $or: [{ option1: { $nin: arrayOption1 } }],
+        };
+
+        if (arrayOption2.length > 0) {
+          query.$or = [...query.$or, { option2: { $nin: arrayOption2 } }];
+        }
+        await ProductSKU.deleteMany(query);
+
+        minPrice = Math.min(...Object.values(req.body.productSKU));
+        maxPrice = Math.max(...Object.values(req.body.productSKU));
+        updateField["minPrice"] = minPrice;
+        updateField["maxPrice"] = maxPrice;
+        updateField["price"] = null;
+      }
+
+      updateField.productSKUBarcodes = productSKUBarcodes;
 
       const newProduct = await Product.findOneAndUpdate(
         {
@@ -115,9 +210,13 @@ const productController = {
 
   getProductInfo: async (req, res) => {
     try {
-      const product = await Product.findById(req.params.id);
+      const product = await Product.findById(req.params.id).populate(
+        "productSKUDetails"
+      );
 
-      res.status(200).send({ product });
+      res.status(200).send({
+        product: { ...product._doc, productSKUList: product.productSKUDetails },
+      });
     } catch (err) {
       res.status(500).send(err);
     }
