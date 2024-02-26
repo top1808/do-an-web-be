@@ -40,7 +40,6 @@ const productController = {
     try {
       const product = await Product.findById(req.params.id);
       await product.deleteOne();
-
       await ProductSKU.deleteMany({ productId: req.params.id });
 
       const notification = {
@@ -260,7 +259,9 @@ const productController = {
       const findProduct = await Product.findOne({
         _id: req.params.id,
         status: "active",
-      }).populate("discountProgramDetails");
+      })
+        .populate("discountProgramDetails")
+        .populate("productSKUDetails");
       if (!findProduct)
         return res.status(404).send({ message: "Product is not found." });
       let product = findProduct._doc;
@@ -278,7 +279,12 @@ const productController = {
         }
       }
 
-      res.status(200).send({ product });
+      res.status(200).send({
+        product: {
+          ...product,
+          productSKUList: findProduct.productSKUDetails,
+        },
+      });
     } catch (err) {
       res.status(500).send(err);
     }
@@ -292,8 +298,10 @@ const productController = {
 
       const products = await Product.find(
         req.params.categoryId === "all"
-          ? {}
-          : { categoryIds: req.params.categoryId }
+          ? {
+              status: "active",
+            }
+          : { categoryIds: req.params.categoryId, status: "active" }
       )
         .skip(offset)
         .limit(limit);
