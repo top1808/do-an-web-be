@@ -10,9 +10,19 @@ const productSchema = new Schema(
     image: {
       type: String,
     },
+    images: [
+      {
+        type: String,
+      },
+    ],
     price: {
       type: Number,
-      required: true,
+    },
+    minPrice: {
+      type: Number,
+    },
+    maxPrice: {
+      type: Number,
     },
     description: {
       type: String,
@@ -31,6 +41,19 @@ const productSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "DiscountProgram",
     },
+    groupOptions: [
+      {
+        groupName: {
+          type: String,
+        },
+        options: [{ type: String }],
+      },
+    ],
+    productSKUBarcodes: [
+      {
+        type: String,
+      },
+    ],
   },
   { timestamps: true }
 );
@@ -45,6 +68,12 @@ productSchema.virtual("discountProgramDetails", {
   ref: "DiscountProgram",
   localField: "discountProgramId",
   foreignField: "_id",
+});
+
+productSchema.virtual("productSKUDetails", {
+  ref: "ProductSKU",
+  localField: "productSKUBarcodes",
+  foreignField: "barcode",
 });
 
 module.exports = mongoose.model("Product", productSchema);

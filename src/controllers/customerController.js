@@ -2,6 +2,7 @@ const Customer = require("../models/Customer");
 const bcrypt = require("bcrypt");
 const { generateID } = require("../utils/functionHelper");
 const notificationController = require("./notificationController");
+const Order = require("../models/Order");
 
 const customerController = {
   //getAll
@@ -11,7 +12,10 @@ const customerController = {
       const offset = Number(query?.offset) || 0;
       const limit = Number(query?.limit) || 20;
 
-      const customers = await Customer.find().skip(offset).limit(limit);
+      const customers = await Customer.find()
+        .sort({ createdAt: -1 })
+        .skip(offset)
+        .limit(limit);
       const total = await Customer.find().count();
 
       res.status(200).send({ customers, total, offset, limit });
@@ -22,11 +26,24 @@ const customerController = {
   //delete
   delete: async (req, res, next) => {
     try {
-      const customer = await Customer.findOneAndDelete(req.params.id);
+      const customer = await Customer.findById(req.params.id);
+      const ordersOfCustomer = await Order.find({
+        customerCode: customer?.id,
+        status: { $nin: ["received", "canceled"] },
+      });
+
+      if (ordersOfCustomer?.length > 0) {
+        return res.status(409).send({ message: "The customer has an order." });
+      }
+
+      await customer.deleteOne();
 
       const notification = {
         title: "Delete notification",
-        body: (req.user?.name || "No name") + " deleted customer " + customer["name"],
+        body:
+          (req.user?.name || "No name") +
+          " deleted customer " +
+          customer["name"],
         image: customer["image"] || "",
         link: "/customer",
         fromUserId: req.user?._id,
@@ -36,6 +53,7 @@ const customerController = {
 
       res.status(200).send({ message: "Delete customer successfully." });
     } catch (err) {
+      console.log("🚀 ~ delete: ~ err:", err);
       res.status(500).send(err);
     }
   },
@@ -55,7 +73,10 @@ const customerController = {
 
       const notification = {
         title: "Create notification",
-        body: (req.user?.name || "No name") + " created customer " + newCustomer["name"],
+        body:
+          (req.user?.name || "No name") +
+          " created customer " +
+          newCustomer["name"],
         image: newCustomer["image"] || "",
         link: "/customer",
         fromUserId: req.user?._id,
@@ -93,7 +114,10 @@ const customerController = {
 
       const notification = {
         title: "Edit notification",
-        body: (req.user?.name || "No name") + " edited customer " + newCustomer["name"],
+        body:
+          (req.user?.name || "No name") +
+          " edited customer " +
+          newCustomer["name"],
         image: newCustomer["image"] || "",
         link: "/customer",
         fromUserId: req.user?._id,

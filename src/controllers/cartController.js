@@ -3,6 +3,7 @@ const Cart = require("../models/Cart");
 const Order = require("../models/Order");
 const { generateID } = require("../utils/functionHelper");
 const Voucher = require("../models/Voucher");
+const notificationController = require("./notificationController");
 
 const cartController = {
   getCart: async (req, res) => {
@@ -131,6 +132,17 @@ const cartController = {
       });
 
       const order = await newOrder.save();
+
+      const notification = {
+        title: "New Order",
+        body:
+          `Customer placed an order with order code ${newOrder?.orderCode}`,
+        image: "",
+        link: "/order",
+        fromUserId: customerId,
+        toUserId: "admin",
+      };
+      await notificationController.create(req, notification);
 
       if (data.voucher) {
         await Voucher.updateOne(
