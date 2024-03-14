@@ -13,6 +13,10 @@ const cartSchema = new Schema(
       ref: "Product",
       required: true,
     },
+    productSKUBarcode: {
+      type: String,
+      required: true,
+    },
     price: {
       type: Number,
       required: true,
@@ -57,6 +61,12 @@ cartSchema.virtual("proId", {
   ref: "Product",
   localField: "product",
   foreignField: "_id",
+});
+
+cartSchema.virtual("productSKU", {
+  ref: "ProductSKU",
+  localField: "productSKUBarcode",
+  foreignField: "barcode",
 });
 
 module.exports = mongoose.model("Cart", cartSchema);
