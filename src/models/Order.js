@@ -33,6 +33,9 @@ const orderSchema = new Schema(
     },
     products: [
       {
+        productImage: {
+          type: String,
+        },
         productCode: {
           type: Schema.Types.ObjectId,
           ref: 'Product',

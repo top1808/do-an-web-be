@@ -9,9 +9,15 @@ const cartController = {
   getCart: async (req, res) => {
     try {
       const customerId = await req.header("userId");
-      const carts = await Cart.find({ customerId: customerId }).populate(
-        "product"
-      );
+      const carts = await Cart.find({ customerId: customerId })
+        .populate("product")
+        .populate("productSKU")
+        .then((data) => {
+          return data.map((item) => ({
+            ...item._doc,
+            productSKU: item.productSKU?.[0],
+          }));
+        });
 
       res.status(200).send({ carts });
     } catch (err) {
@@ -24,7 +30,8 @@ const cartController = {
       if (customerId) {
         const data = {
           customerId: customerId,
-          product: req.body._id,
+          product: req.body.productId,
+          productSKUBarcode: req.body.barcode,
           price: req.body.price,
           promotionPrice: 0,
           quantity: req.body.quantity,
@@ -33,11 +40,15 @@ const cartController = {
         const findCart = await Cart.findOne({
           customerId: data.customerId,
           product: data.product,
+          productSKUBarcode: data?.productSKUBarcode,
         });
 
         if (findCart) {
           if (findCart.quantity + data.quantity > 99) {
-            return res.status(400).send({ message: "Bạn chỉ có thể thêm số lượng tối đa 99 trên mỗi sản phẩm." });
+            return res.status(400).send({
+              message:
+                "Bạn chỉ có thể thêm số lượng tối đa 99 trên mỗi sản phẩm.",
+            });
           }
           await Cart.updateOne(
             {
@@ -51,7 +62,10 @@ const cartController = {
           );
         } else {
           if (data.quantity > 99) {
-            return res.status(400).send({ message: "Bạn chỉ có thể thêm số lượng tối đa 99 trên mỗi sản phẩm." });
+            return res.status(400).send({
+              message:
+                "Bạn chỉ có thể thêm số lượng tối đa 99 trên mỗi sản phẩm.",
+            });
           }
           const newCartItem = new Cart(data);
           await newCartItem.save();
@@ -135,8 +149,7 @@ const cartController = {
 
       const notification = {
         title: "New Order",
-        body:
-          `Customer placed an order with order code ${newOrder?.orderCode}`,
+        body: `Customer placed an order with order code ${newOrder?.orderCode}`,
         image: "",
         link: "/order",
         fromUserId: customerId,
