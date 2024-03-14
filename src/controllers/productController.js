@@ -225,8 +225,17 @@ const productController = {
     try {
       let products = await Product.find()
         .populate("categoryIds")
+        .populate("discountProgramDetails")
+        .populate("productSKUDetails")
         .sort({ createdAt: -1 })
-        .select(["-image", "-description"]);
+        .select(["-image", "-description"])
+        .then((data) => {
+          return data.map((item) => ({
+            ...item._doc,
+            productSKUList: item.productSKUDetails,
+            discountProgramDetails: item.discountProgramDetails,
+          }));
+        });
 
       res.status(200).send({ products });
     } catch (err) {

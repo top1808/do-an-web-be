@@ -7,9 +7,10 @@ const ORDER_STATUS = [
   "canceled",
 ];
 
-const CURRENT_DATE = new Date().toISOString().split("T")[0];
+const CURRENT_DATE = new Date().toLocaleString("vi-VN").split(" ")[1];
+const CURRENT_TIME = new Date().toLocaleString("vi-VN").split(" ")[0];
 
 module.exports = {
   ORDER_STATUS,
-  CURRENT_DATE
+  CURRENT_DATE,
 };
