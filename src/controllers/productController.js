@@ -72,9 +72,14 @@ const productController = {
           const barcode = generateBarcode();
           productSKUBarcodes.push(barcode);
 
+          const options = Object.keys(parseKey).map((item) => ({
+            groupName: item,
+            option: parseKey[item],
+          }));
+
           const newProductSKU = new ProductSKU({
             ...parseKey,
-            option2: parseKey?.option2 || "",
+            options: options || [],
             price: req.body.productSKU[key],
             barcode,
             productId: newProduct._id,
@@ -91,6 +96,7 @@ const productController = {
         newProduct["price"] = null;
       }
       newProduct["productSKUBarcodes"] = productSKUBarcodes;
+
       await newProduct.save();
 
       await Product.findById(newProduct._id).populate("categoryList");
@@ -124,19 +130,28 @@ const productController = {
       updateField["maxPrice"] = 0;
 
       if (updateField.productSKU) {
-        let arrayOption1 = [];
-        let arrayOption2 = [];
+        let allOptions = [];
         for (const key in updateField.productSKU) {
           const parseKey = JSON.parse(key);
-          addElementToArrayUnique(arrayOption1, parseKey?.option1);
-          if (parseKey?.option2) {
-            addElementToArrayUnique(arrayOption2, parseKey?.option2);
-          }
+          const options = Object.keys(parseKey).map((item) => ({
+            groupName: item,
+            option: parseKey[item],
+          }));
+
+          allOptions.push(options);
+
           const findProductSKU = await ProductSKU.findOneAndUpdate(
             {
               productId: productId,
-              option1: parseKey.option1,
-              option2: parseKey?.option2 || "",
+              options: {
+                $size: options.length,
+                $all: options.map((item) => ({
+                  $elemMatch: {
+                    groupName: item.groupName,
+                    option: item.option,
+                  },
+                })),
+              },
             },
             {
               $set: {
@@ -149,23 +164,29 @@ const productController = {
             const barcode = generateBarcode();
             productSKUBarcodes.push(barcode);
             const newProductSKU = new ProductSKU({
-              ...parseKey,
+              options,
               price: updateField.productSKU[key],
               barcode,
+              productId: productId,
             });
             await newProductSKU.save();
           } else {
             productSKUBarcodes.push(findProductSKU.barcode);
           }
         }
+
         let query = {
           productId: productId,
-          $or: [{ option1: { $nin: arrayOption1 } }],
+          $nor: allOptions.map((optionsSet) => ({
+            options: {
+                $size: optionsSet.length,
+                $all: optionsSet.map((option) => ({
+                    $elemMatch: option,
+                })),
+            },
+        })),
         };
 
-        if (arrayOption2.length > 0) {
-          query.$or = [...query.$or, { option2: { $nin: arrayOption2 } }];
-        }
         await ProductSKU.deleteMany(query);
 
         minPrice = Math.min(...Object.values(req.body.productSKU));

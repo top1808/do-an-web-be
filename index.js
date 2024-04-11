@@ -33,7 +33,8 @@ app.use(
   })
 );
 app.use(express.json({ limit: "30mb" }));
-app.use(express.static("public"));
+// app.use(express.static("public"));
+app.use('/public/images', express.static('public/images'))
 
 app.use(bodyParser.json({ limit: "30mb" }));
 app.use(bodyParser.urlencoded({ extended: true, limit: "30mb" }));
