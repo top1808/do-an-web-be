@@ -10,12 +10,16 @@ const ProductSKUSchema = new Schema(
     image: {
       type: String,
     },
-    option1: {
-      type: String,
-    },
-    option2: {
-      type: String,
-    },
+    options: [
+      {
+        groupName: {
+          type: String,
+        },
+        option: {
+          type: String,
+        },
+      },
+    ],
     price: {
       type: Number,
       required: true,
