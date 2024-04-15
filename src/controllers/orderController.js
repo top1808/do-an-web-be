@@ -1,5 +1,6 @@
 const Order = require("../models/Order");
 const Product = require("../models/Product");
+const ProductOrder = require("../models/ProductOrder");
 const { generateID } = require("../utils/functionHelper");
 const notificationController = require("./notificationController");
 
@@ -28,6 +29,10 @@ const orderController = {
       const order = await Order.findById(req.params.id);
       await order.deleteOne();
 
+      await ProductOrder.deleteMany({
+        orderCode: order["orderCode"],
+      });
+
       const notification = {
         title: "Delete notification",
         body:
@@ -48,9 +53,23 @@ const orderController = {
   //create
   create: async (req, res) => {
     try {
+      const orderCode = req.body?.orderCode || generateID();
+      let productOrderIds = [];
+      await Promise.all(
+        req.body.products.map(async (item) => {
+          const newProductOrder = new ProductOrder({
+            ...item,
+            orderCode: orderCode,
+          });
+          const productOrder = await newProductOrder.save();
+          productOrderIds.push(productOrder._id);
+        })
+      );
+
       const newOrder = new Order({
         ...req.body,
-        orderCode: req.body?.orderCode || generateID(),
+        orderCode: orderCode,
+        products: productOrderIds,
       });
 
       const order = await newOrder.save();
@@ -76,7 +95,31 @@ const orderController = {
 
   edit: async (req, res) => {
     try {
-      const updateField = req.body;
+      let productOrderIds = [];
+      await Promise.all(
+        req.body.products.map(async (item) => {
+          if (item?._id) {
+            productOrderIds.push(item._id);
+            await ProductOrder.updateOne(
+              {
+                _id: item._id,
+              },
+              {
+                $set: item,
+              }
+            );
+          } else {
+            const newProductOrder = new ProductOrder({
+              ...item,
+              orderCode: req.body?.orderCode,
+            });
+            const productOrder = await newProductOrder.save();
+            productOrderIds.push(productOrder._id);
+          }
+        })
+      );
+
+      const updateField = { ...req.body, products: productOrderIds };
 
       const newOrder = await Order.findOneAndUpdate(
         {
@@ -86,6 +129,11 @@ const orderController = {
           $set: updateField,
         }
       );
+
+      await ProductOrder.deleteMany({
+        orderCode: newOrder["orderCode"],
+        _id: { $nin: productOrderIds },
+      });
 
       const notification = {
         title: "Edit notification",
@@ -136,7 +184,7 @@ const orderController = {
         body:
           (customerId
             ? `Customer ${newOrder["customerName"]}`
-            : (req.user?.name || "No name")) +
+            : req.user?.name || "No name") +
           ` ${updateFields.status} order ` +
           newOrder["orderCode"],
         image: "",
@@ -170,11 +218,15 @@ const orderController = {
 
   getById: async (req, res) => {
     try {
-      const findOrder = await Order.findById(req.params.id).populate("voucher");
+      const findOrder = await Order.findById(req.params.id).populate([
+        "voucher",
+        "productList",
+      ]);
 
       const order = {
         ...findOrder._doc,
         voucher: findOrder.voucher,
+        products: findOrder.productList,
       };
 
       res.status(200).send({ order });

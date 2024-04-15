@@ -3,18 +3,21 @@ const Schema = mongoose.Schema;
 
 const productOrderSchema = new Schema(
   {
-    productId: {
+    orderCode: {
+      type: String,
+    },
+    productCode: {
       type: Schema.Types.ObjectId,
       ref: "Product",
     },
-    name: {
+    productName: {
       type: String,
       required: true,
     },
     image: {
       type: String,
     },
-    code: {
+    productSKUBarcode: {
       type: String,
     },
     price: {
@@ -44,10 +47,16 @@ const productOrderSchema = new Schema(
 );
 
 productOrderSchema.virtual("product", {
-    ref: "Product",
-    localField: "productId",
-    foreignField: "_id",
-  });
-  
+  ref: "Product",
+  localField: "productCode",
+  foreignField: "_id",
+});
+
+productOrderSchema.virtual("order", {
+  ref: "Order",
+  localField: "orderCode",
+  foreignField: "orderCode",
+  justOne: true,
+});
 
 module.exports = mongoose.model("ProductOrder", productOrderSchema);
