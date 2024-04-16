@@ -20,6 +20,16 @@ const nodeSchedule = schedule.scheduleJob(rule, async () => {
       }
     );
 
+    await Voucher.updateMany(
+      {
+        dateEnd: { $gte: CURRENT_DATE },
+        status: "incoming",
+      },
+      {
+        $set: { status: "active" },
+      }
+    );
+
     await DiscountProgram.updateMany(
       {
         dateEnd: { $lt: CURRENT_DATE },

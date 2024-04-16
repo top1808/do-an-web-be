@@ -65,7 +65,13 @@ voucherSchema.pre("updateOne", async function (done) {
 
     if (docToUpdate) {
       const quantity = docToUpdate.quantity;
-      update.$set.quantityLeft = quantity - quantityUsed;
+      const quantityLeft = quantity - quantityUsed;
+
+      update.$set.quantityLeft = quantityLeft;
+
+      if (quantityLeft <= 0) {
+        update.$set.status = "disable";
+      }
     }
   }
   done();
