@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const DiscountProgram = require("./DiscountProgram");
 const Schema = mongoose.Schema;
 
 const productDiscountSchema = new Schema(
@@ -42,6 +43,9 @@ const productDiscountSchema = new Schema(
         },
       },
     ],
+    status: {
+      type: Boolean,
+    },
   },
   { timestamps: true }
 );
