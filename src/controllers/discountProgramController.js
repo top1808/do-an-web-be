@@ -61,6 +61,7 @@ const discountProgramController = {
           const newProductDiscount = new ProductDiscount({
             ...item,
             discountProgramCode: discountProgramCode,
+            status: req.body?.status === "active",
           });
           const productDiscount = await newProductDiscount.save();
           productDiscountIds.push(productDiscount._id);
@@ -104,13 +105,14 @@ const discountProgramController = {
                 _id: item._id,
               },
               {
-                $set: item,
+                $set: { ...item, status: req.body?.status === "active" },
               }
             );
           } else {
             const newProductDiscount = new ProductDiscount({
               ...item,
               discountProgramCode: req.body?.discountProgramCode,
+              status: req.body?.status === "active",
             });
             const productDiscount = await newProductDiscount.save();
             productDiscountIds.push(productDiscount._id);

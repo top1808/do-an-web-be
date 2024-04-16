@@ -1,4 +1,6 @@
+const DiscountProgram = require("../models/DiscountProgram");
 const Product = require("../models/Product");
+const ProductDiscount = require("../models/ProductDiscount");
 const ProductSKU = require("../models/ProductSKU");
 const {
   generateBarcode,
@@ -179,12 +181,12 @@ const productController = {
           productId: productId,
           $nor: allOptions.map((optionsSet) => ({
             options: {
-                $size: optionsSet.length,
-                $all: optionsSet.map((option) => ({
-                    $elemMatch: option,
-                })),
+              $size: optionsSet.length,
+              $all: optionsSet.map((option) => ({
+                $elemMatch: option,
+              })),
             },
-        })),
+          })),
         };
 
         await ProductSKU.deleteMany(query);
@@ -246,7 +248,6 @@ const productController = {
     try {
       let products = await Product.find()
         .populate("categoryIds")
-        .populate("discountProgramDetails")
         .populate("productSKUDetails")
         .sort({ createdAt: -1 })
         .select(["-image", "-description"])
@@ -276,7 +277,27 @@ const productController = {
         status: "active",
       })
         .skip(skip)
-        .limit(limit);
+        .limit(limit)
+        .then(async (data) => {
+          return await Promise.all(
+            data.map(async (item) => {
+              const productDiscounts = await ProductDiscount.find({
+                productCode: item._id,
+                status: true,
+              }).populate("discountProgram");
+              if (productDiscounts) {
+                return {
+                  ...item._doc,
+                  discounts: productDiscounts.map((elm) => ({
+                    ...elm._doc,
+                    discountProgram: elm["discountProgram"],
+                  })),
+                };
+              }
+              return item;
+            })
+          );
+        });
 
       res.status(200).send({ products });
     } catch (err) {
@@ -289,30 +310,26 @@ const productController = {
       const findProduct = await Product.findOne({
         _id: req.params.id,
         status: "active",
-      })
-        .populate("discountProgramDetails")
-        .populate("productSKUDetails");
+      }).populate("productSKUDetails");
       if (!findProduct)
         return res.status(404).send({ message: "Product is not found." });
       let product = findProduct._doc;
 
-      const discountProgram = findProduct["discountProgramDetails"][0];
-
-      if (discountProgram && discountProgram.products) {
-        for (const p of discountProgram.products) {
-          product = {
-            ...product,
-            promotionPrice: p.promotionPrice,
-            type: p.type,
-            valueDiscount: p.value,
-          };
-        }
-      }
+      const productDiscounts = await ProductDiscount.find({
+        productCode: product._id,
+        status: true,
+      }).populate("discountProgram");
 
       res.status(200).send({
         product: {
           ...product,
           productSKUList: findProduct.productSKUDetails,
+          discounts: productDiscounts
+            ? productDiscounts.map((elm) => ({
+                ...elm._doc,
+                discountProgram: elm["discountProgram"],
+              }))
+            : [],
         },
       });
     } catch (err) {

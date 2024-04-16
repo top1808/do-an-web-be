@@ -37,10 +37,6 @@ const productSchema = new Schema(
         ref: "Category",
       },
     ],
-    discountProgramId: {
-      type: Schema.Types.ObjectId,
-      ref: "DiscountProgram",
-    },
     groupOptions: [
       {
         groupName: {
@@ -61,12 +57,6 @@ const productSchema = new Schema(
 productSchema.virtual("categoryList", {
   ref: "Category",
   localField: "categoryIds",
-  foreignField: "_id",
-});
-
-productSchema.virtual("discountProgramDetails", {
-  ref: "DiscountProgram",
-  localField: "discountProgramId",
   foreignField: "_id",
 });
 
