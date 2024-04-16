@@ -4,25 +4,18 @@ const Schema = mongoose.Schema;
 
 const discountProgramSchema = new Schema(
   {
+    discountProgramCode: {
+      type: String,
+      required: true,
+    },
     name: {
       type: String,
       required: true,
     },
     products: [
       {
-        productCode: {
-          type: Schema.Types.ObjectId,
-          ref: "Product",
-        },
-        type: {
-          type: String,
-        },
-        value: {
-          type: Number,
-        },
-        promotionPrice: {
-          type: Number,
-        },
+        type: Schema.Types.ObjectId,
+        ref: "ProductDiscount",
       },
     ],
     description: {
@@ -43,5 +36,11 @@ const discountProgramSchema = new Schema(
   },
   { timestamps: true }
 );
+
+discountProgramSchema.virtual("productList", {
+  ref: "ProductDiscount",
+  localField: "products",
+  foreignField: "_id",
+});
 
 module.exports = mongoose.model("DiscountProgram", discountProgramSchema);

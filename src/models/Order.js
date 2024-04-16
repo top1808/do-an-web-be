@@ -33,28 +33,8 @@ const orderSchema = new Schema(
     },
     products: [
       {
-        productImage: {
-          type: String,
-        },
-        productCode: {
-          type: Schema.Types.ObjectId,
-          ref: 'Product',
-        },
-        productName: {
-          type: String,
-        },
-        price: {
-          type: Number,
-        },
-        quantity: {
-          type: Number,
-        },
-        totalPrice: {
-          type: Number,
-        },
-        note: {
-          type: String,
-        },
+        type: Schema.Types.ObjectId,
+        ref: "ProductOrder",
       },
     ],
     paymentMethod: {
@@ -97,16 +77,22 @@ const orderSchema = new Schema(
     reasonCancel: {
       type: String,
       default: "",
-    }
+    },
   },
   { timestamps: true }
 );
 
-orderSchema.virtual('voucher', {
-  ref: 'Voucher',
+orderSchema.virtual("voucher", {
+  ref: "Voucher",
   localField: "voucherCode",
-  foreignField: 'code',
+  foreignField: "code",
   justOne: true,
-})
+});
+
+orderSchema.virtual("productList", {
+  ref: "ProductOrder",
+  localField: "products",
+  foreignField: "_id",
+});
 
 module.exports = mongoose.model("Order", orderSchema);

@@ -1,5 +1,7 @@
 const DiscountProgram = require("../models/DiscountProgram");
 const Product = require("../models/Product");
+const ProductDiscount = require("../models/ProductDiscount");
+const { generateID } = require("../utils/functionHelper");
 const notificationController = require("./notificationController");
 
 const discountProgramController = {
@@ -26,14 +28,16 @@ const discountProgramController = {
       const discountProgram = await DiscountProgram.findById(req.params.id);
       await discountProgram.deleteOne();
 
-      await Product.updateMany(
-        { discountProgramId: req.params.id },
-        { $set: { discountProgramId: null } }
-      );
+      await ProductDiscount.deleteMany({
+        discountProgramCode: discountProgram["discountProgramCode"],
+      });
 
       const notification = {
         title: "Delete notification",
-        body: (req.user?.name || "No name") + " deleted discount program " + discountProgram["name"],
+        body:
+          (req.user?.name || "No name") +
+          " deleted discount program " +
+          discountProgram["name"],
         image: "",
         link: "/discount-program",
         fromUserId: req.user?._id,
@@ -49,18 +53,32 @@ const discountProgramController = {
   //create
   create: async (req, res) => {
     try {
-      const newDiscountProgram = await DiscountProgram.create({ ...req.body });
+      const discountProgramCode = generateID();
 
-      const productIds = req.body.products?.map((item) => item.productCode);
-
-      await Product.updateMany(
-        { _id: { $in: productIds } },
-        { $set: { discountProgramId: newDiscountProgram._id } }
+      let productDiscountIds = [];
+      await Promise.all(
+        req.body.products.map(async (item) => {
+          const newProductDiscount = new ProductDiscount({
+            ...item,
+            discountProgramCode: discountProgramCode,
+          });
+          const productDiscount = await newProductDiscount.save();
+          productDiscountIds.push(productDiscount._id);
+        })
       );
+
+      await DiscountProgram.create({
+        ...req.body,
+        discountProgramCode,
+        products: productDiscountIds,
+      });
 
       const notification = {
         title: "Create notification",
-        body: (req.user?.name || "No name") + " created discount program " + req.body["name"],
+        body:
+          (req.user?.name || "No name") +
+          " created discount program " +
+          req.body["name"],
         image: "",
         link: "/discount-program",
         fromUserId: req.user?._id,
@@ -76,7 +94,31 @@ const discountProgramController = {
 
   edit: async (req, res) => {
     try {
-      const updateField = { ...req.body };
+      let productDiscountIds = [];
+      await Promise.all(
+        req.body.products.map(async (item) => {
+          if (item?._id) {
+            productDiscountIds.push(item._id);
+            await ProductDiscount.updateOne(
+              {
+                _id: item._id,
+              },
+              {
+                $set: item,
+              }
+            );
+          } else {
+            const newProductDiscount = new ProductDiscount({
+              ...item,
+              discountProgramCode: req.body?.discountProgramCode,
+            });
+            const productDiscount = await newProductDiscount.save();
+            productDiscountIds.push(productDiscount._id);
+          }
+        })
+      );
+
+      const updateField = { ...req.body, products: productDiscountIds };
 
       const newDiscountProgram = await DiscountProgram.findOneAndUpdate(
         {
@@ -87,32 +129,17 @@ const discountProgramController = {
         }
       );
 
-      const productIds = req.body.products?.map((item) => item.productCode);
-
-      await Product.bulkWrite([
-        {
-          updateMany: {
-            filter: {
-              _id: { $in: productIds },
-              discountProgramId: { $ne: req.params.id },
-            },
-            update: { $set: { discountProgramId: req.params.id } },
-          },
-        },
-        {
-          updateMany: {
-            filter: {
-              _id: { $nin: productIds },
-              discountProgramId: req.params.id,
-            },
-            update: { $set: { discountProgramId: null } },
-          },
-        },
-      ]);
+      await ProductDiscount.deleteMany({
+        discountProgramCode: newDiscountProgram["discountProgramCode"],
+        _id: { $nin: productDiscountIds },
+      });
 
       const notification = {
         title: "Edit notification",
-        body: (req.user?.name || "No name") + " editted discount program " + newDiscountProgram["name"],
+        body:
+          (req.user?.name || "No name") +
+          " editted discount program " +
+          newDiscountProgram["name"],
         image: "",
         link: "/discount-program",
         fromUserId: req.user?._id,
@@ -130,26 +157,14 @@ const discountProgramController = {
 
   getById: async (req, res) => {
     try {
-      const discountProgram = await DiscountProgram.findById(req.params.id);
-
-      const newProducts = [];
-
-      for (const product of discountProgram.products) {
-        const findProduct = await Product.findById(product.productCode, {
-          name: 1,
-          price: 1,
-        });
-        newProducts.push({
-          productName: findProduct.name,
-          price: findProduct.price,
-          ...product._doc,
-        });
-      }
+      const discountProgram = await DiscountProgram.findById(
+        req.params.id
+      ).populate(["productList"]);
 
       res.status(200).send({
         discountProgram: {
           ...discountProgram._doc,
-          products: newProducts,
+          products: discountProgram.productList,
         },
       });
     } catch (err) {
