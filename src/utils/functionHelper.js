@@ -1,6 +1,6 @@
 const dayjs = require("dayjs");
 
-const removeDiacritics = require("diacritics").remove; // Using the diacritics library
+const removeDiacritics = require("diacritics").remove;
 
 const generateID = () => {
   return Math.floor(Math.random() * Math.pow(10, 21)).toString();

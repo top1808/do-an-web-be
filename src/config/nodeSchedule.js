@@ -29,6 +29,17 @@ const nodeSchedule = schedule.scheduleJob(rule, async () => {
         $set: { status: "disable" },
       }
     );
+
+    await DiscountProgram.updateMany(
+      {
+        dateStart: { $gte: CURRENT_DATE },
+        status: "incoming",
+      },
+      {
+        $set: { status: "active" },
+      }
+    );
+
   } catch (error) {
     console.error("Error updating data:", error);
   }

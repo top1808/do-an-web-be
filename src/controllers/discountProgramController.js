@@ -1,8 +1,10 @@
+const dayjs = require("dayjs");
 const DiscountProgram = require("../models/DiscountProgram");
 const Product = require("../models/Product");
 const ProductDiscount = require("../models/ProductDiscount");
 const { generateID } = require("../utils/functionHelper");
 const notificationController = require("./notificationController");
+const { CURRENT_DATE } = require("../utils/constant");
 
 const discountProgramController = {
   getData: async (req, res, next) => {
@@ -26,6 +28,13 @@ const discountProgramController = {
   delete: async (req, res, next) => {
     try {
       const discountProgram = await DiscountProgram.findById(req.params.id);
+
+      if (discountProgram._doc?.status === "active") {
+        return res
+          .status(409)
+          .send({ message: "Discount Program is running." });
+      }
+
       await discountProgram.deleteOne();
 
       await ProductDiscount.deleteMany({
@@ -54,6 +63,9 @@ const discountProgramController = {
   create: async (req, res) => {
     try {
       const discountProgramCode = generateID();
+      const status = dayjs(req.body.dateStart).isAfter(dayjs())
+        ? "incoming"
+        : req.body.status;
 
       let productDiscountIds = [];
       await Promise.all(
@@ -61,7 +73,7 @@ const discountProgramController = {
           const newProductDiscount = new ProductDiscount({
             ...item,
             discountProgramCode: discountProgramCode,
-            status: req.body?.status === "active",
+            status: status === "active",
           });
           const productDiscount = await newProductDiscount.save();
           productDiscountIds.push(productDiscount._id);
@@ -70,6 +82,7 @@ const discountProgramController = {
 
       await DiscountProgram.create({
         ...req.body,
+        status,
         discountProgramCode,
         products: productDiscountIds,
       });
@@ -95,6 +108,14 @@ const discountProgramController = {
 
   edit: async (req, res) => {
     try {
+      const discountProgram = await DiscountProgram.findById(req.params.id);
+
+      if (discountProgram._doc?.status === "active") {
+        return res
+          .status(409)
+          .send({ message: "Discount Program is running." });
+      }
+
       let productDiscountIds = [];
       await Promise.all(
         req.body.products.map(async (item) => {
@@ -168,6 +189,55 @@ const discountProgramController = {
           ...discountProgram._doc,
           products: discountProgram.productList,
         },
+      });
+    } catch (err) {
+      res.status(500).send(err);
+    }
+  },
+
+  changeStatus: async (req, res) => {
+    try {
+      const discountProgram = await DiscountProgram.findById(req.params.id);
+
+      let status =
+        req.body.status === "disable"
+          ? "disable"
+          : dayjs(discountProgram._doc.dateStart)
+              .startOf("day")
+              .isAfter(dayjs().startOf("day"))
+          ? "incoming"
+          : req.body.status;
+
+      const updateFields = {
+        status,
+      };
+
+      const newDiscountProgram = await DiscountProgram.findOneAndUpdate(
+        {
+          _id: req.params.id,
+        },
+        {
+          $set: updateFields,
+        }
+      );
+
+      const notificationAdmin = {
+        title: "Discount Program notification",
+        body:
+          req.user?.name ||
+          "No name" +
+            ` ${updateFields.status} discount program ` +
+            newDiscountProgram["name"],
+        image: "",
+        link: "/discount-program",
+        fromUserId: req.user?._id,
+        toUserId: "admin",
+      };
+      await notificationController.create(req, notificationAdmin);
+
+      res.status(200).send({
+        id: req.params.id,
+        message: `Change status to ${updateFields.status?.toUpperCase()} successful.`,
       });
     } catch (err) {
       res.status(500).send(err);
