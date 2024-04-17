@@ -85,11 +85,11 @@ const voucherController = {
   edit: async (req, res) => {
     try {
       const status =
-        req.body.status === "disable"
+        req.body.status === "disable" || dayjs().isAfter(dayjs(req.body.dateEnd))
           ? "disable"
           : dayjs(req.body.dateStart).isAfter(dayjs())
           ? "incoming"
-          : req.body.status;
+          : "active";
 
       const updateField = { ...req.body, status };
 
