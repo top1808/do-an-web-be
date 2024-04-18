@@ -58,7 +58,6 @@ const imageController = {
   resizeImage: async (req, res, next) => {
     try {
       const resizedImagePath = req.file.path.replace(/\.\w+$/, "_resized$&");
-      console.log("🚀 ~ resizeImage: ~ resizedImagePath:", resizedImagePath);
 
       await sharp(req.file.path).resize(700, 700).toFile(resizedImagePath);
 

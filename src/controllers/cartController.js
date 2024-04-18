@@ -21,7 +21,6 @@ const cartController = {
                 productSKUBarcode: item.productSKUBarcode,
                 status: true,
               }).populate("discountProgram");
-              console.log("🚀 ~ data.map ~ productDiscount:", productDiscount);
 
               return {
                 ...item._doc,

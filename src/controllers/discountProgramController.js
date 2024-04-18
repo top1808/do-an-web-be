@@ -250,31 +250,30 @@ const discountProgramController = {
 
   getListDiscountProgram: async (req, res) => {
     try {
-      const discountPrograms = await DiscountProgram.find({ status: "active" });
-
-      const newDiscountPrograms = [];
-
-      for (const program of discountPrograms) {
-        const newProducts = [];
-
-        for (const product of program.products) {
-          const findProduct = await Product.findOne({
-            _id: product.productCode,
-            status: "active",
-          }).select(["-categoryIds", "-description", "-discountProgramId"]);
-          newProducts.push({
-            ...findProduct._doc,
-            ...product._doc,
-            _id: findProduct._id,
-          });
-        }
-        newDiscountPrograms.push({
-          ...program._doc,
-          products: newProducts,
+      const discountPrograms = await DiscountProgram.find({ status: "active" })
+        .populate("productList")
+        .then(async (data) => {
+          const modifiedData = await Promise.all(
+            data.map(async (item) => {
+              const products = await Promise.all(
+                item.productList.map(async (product) => {
+                  const prod = await Product.findById(product.productCode);
+                  return {
+                    ...prod._doc,
+                    ...product._doc,
+                  };
+                })
+              );
+              return {
+                ...item._doc,
+                products,
+              };
+            })
+          );
+          return modifiedData;
         });
-      }
 
-      res.status(200).send({ discountPrograms: newDiscountPrograms });
+      res.status(200).send({ discountPrograms });
     } catch (err) {
       res.status(500).send(err);
     }
