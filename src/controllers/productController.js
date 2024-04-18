@@ -285,13 +285,27 @@ const productController = {
                 productCode: item._id,
                 status: true,
               }).populate("discountProgram");
-              if (productDiscounts) {
-                return {
-                  ...item._doc,
-                  discounts: productDiscounts.map((elm) => ({
+              if (productDiscounts?.length > 0) {
+                let minPromotionPrice = item._doc.minPrice;
+                let maxPromotionPrice = item._doc.maxPrice;
+                const discounts = productDiscounts?.map((elm) => {
+                  if (elm._doc.promotionPrice < minPromotionPrice)
+                    minPromotionPrice = elm._doc.promotionPrice;
+                  if (
+                    elm._doc.price === item._doc.maxPrice &&
+                    elm._doc.promotionPrice < maxPromotionPrice
+                  )
+                    maxPromotionPrice = elm._doc.promotionPrice;
+                  return {
                     ...elm._doc,
                     discountProgram: elm["discountProgram"],
-                  })),
+                  };
+                });
+                return {
+                  ...item._doc,
+                  minPromotionPrice,
+                  maxPromotionPrice,
+                  discounts,
                 };
               }
               return item;

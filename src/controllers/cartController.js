@@ -5,6 +5,7 @@ const { generateID } = require("../utils/functionHelper");
 const Voucher = require("../models/Voucher");
 const notificationController = require("./notificationController");
 const ProductOrder = require("../models/ProductOrder");
+const ProductDiscount = require("../models/ProductDiscount");
 
 const cartController = {
   getCart: async (req, res) => {
@@ -13,11 +14,26 @@ const cartController = {
       const carts = await Cart.find({ customerId: customerId })
         .populate("product")
         .populate("productSKU")
-        .then((data) => {
-          return data.map((item) => ({
-            ...item._doc,
-            productSKU: item.productSKU?.[0],
-          }));
+        .then(async (data) => {
+          const modifiedData = await Promise.all(
+            data.map(async (item) => {
+              const productDiscount = await ProductDiscount.findOne({
+                productSKUBarcode: item.productSKUBarcode,
+                status: true,
+              }).populate("discountProgram");
+              console.log("🚀 ~ data.map ~ productDiscount:", productDiscount);
+
+              return {
+                ...item._doc,
+                productSKU: item.productSKU?.[0],
+                discount: {
+                  ...productDiscount._doc,
+                  discountProgram: productDiscount["discountProgram"],
+                },
+              };
+            })
+          );
+          return modifiedData;
         });
 
       res.status(200).send({ carts });
@@ -130,13 +146,13 @@ const cartController = {
     try {
       const customerId = await req.header("userId");
       const orderCode = generateID();
-      
+
       const data = req.body;
       // console.log("🚀 ~ pay: ~ data:", data)
 
       let productOrderIds = [];
       await Promise.all(
-       data?.products.map(async (item) => {
+        data?.products.map(async (item) => {
           const newProductOrder = new ProductOrder({
             ...item,
             orderCode: orderCode,
