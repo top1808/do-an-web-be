@@ -53,7 +53,6 @@ const customerController = {
 
       res.status(200).send({ message: "Delete customer successfully." });
     } catch (err) {
-      console.log("🚀 ~ delete: ~ err:", err);
       res.status(500).send(err);
     }
   },

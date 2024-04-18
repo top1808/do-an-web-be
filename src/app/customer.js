@@ -8,6 +8,7 @@ const voucherRoute = require('../routes/customer/voucher');
 const orderRoute = require('../routes/customer/order');
 const discountProgramRoute = require('../routes/customer/discountProgram');
 const notificationRoute = require('../routes/customer/notification');
+const reviewRoute = require('../routes/customer/review');
 const router = express.Router();
 
 router.use("/auth", authRoute);
@@ -19,5 +20,6 @@ router.use("/cart", cartRoute);
 router.use("/voucher", voucherRoute);
 router.use("/discount-program", discountProgramRoute);
 router.use("/order", orderRoute);
+router.use("/review", reviewRoute);
 
 module.exports = router;

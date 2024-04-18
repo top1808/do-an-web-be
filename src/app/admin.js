@@ -14,6 +14,7 @@ const voucherRoute = require('../routes/admin/voucher');
 const statisticRoute = require('../routes/admin/statistic');
 const discountProgramRoute = require('../routes/admin/discountProgram');
 const notificationRoute = require('../routes/admin/notification');
+const reviewRoute = require('../routes/admin/review');
 
 router.use("/auth", authRoute);
 
@@ -32,6 +33,7 @@ router.use("/product", productRoute);
 router.use("/voucher", voucherRoute);
 router.use("/discount-program", discountProgramRoute);
 router.use("/statistic", statisticRoute);
+router.use("/review", reviewRoute);
 
 module.exports = router;
 
