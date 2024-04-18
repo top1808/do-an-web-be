@@ -1,3 +1,4 @@
+const dayjs = require("dayjs");
 const Voucher = require("../models/Voucher");
 const notificationController = require("./notificationController");
 
@@ -28,7 +29,8 @@ const voucherController = {
 
       const notification = {
         title: "Delete notification",
-        body: (req.user?.name || "No name") + " deleted voucher " + voucher["name"],
+        body:
+          (req.user?.name || "No name") + " deleted voucher " + voucher["name"],
         image: "",
         link: "/voucher",
         fromUserId: req.user?._id,
@@ -44,8 +46,13 @@ const voucherController = {
   //create
   create: async (req, res) => {
     try {
+      const status = dayjs(req.body.dateStart).isAfter(dayjs())
+        ? "incoming"
+        : req.body.status;
+
       const newVoucher = new Voucher({
         ...req.body,
+        status,
         quantityUsed: 0,
         quantityLeft: req.body.quantity,
         maxDiscountValue:
@@ -58,7 +65,10 @@ const voucherController = {
 
       const notification = {
         title: "Create notification",
-        body: (req.user?.name || "No name") + " created voucher " + newVoucher["name"],
+        body:
+          (req.user?.name || "No name") +
+          " created voucher " +
+          newVoucher["name"],
         image: "",
         link: "/voucher",
         fromUserId: req.user?._id,
@@ -74,7 +84,14 @@ const voucherController = {
 
   edit: async (req, res) => {
     try {
-      const updateField = { ...req.body };
+      const status =
+        req.body.status === "disable" || dayjs().isAfter(dayjs(req.body.dateEnd))
+          ? "disable"
+          : dayjs(req.body.dateStart).isAfter(dayjs())
+          ? "incoming"
+          : "active";
+
+      const updateField = { ...req.body, status };
 
       const newVoucher = await Voucher.updateOne(
         {
@@ -85,10 +102,12 @@ const voucherController = {
         }
       );
 
-
       const notification = {
         title: "Edit notification",
-        body: (req.user?.name || "No name") + " editted voucher " + newVoucher["name"],
+        body:
+          (req.user?.name || "No name") +
+          " editted voucher " +
+          newVoucher["name"],
         image: "",
         link: "/voucher",
         fromUserId: req.user?._id,
@@ -131,12 +150,18 @@ const voucherController = {
 
   applyVoucher: async (req, res, next) => {
     try {
-      const voucher = await Voucher.findOne({ code: req.body.voucherCode, status: "active" });
+      const voucher = await Voucher.findOne({
+        code: req.body.voucherCode,
+        status: "active",
+      });
 
       if (!voucher)
         return res.status(404).send({ message: "Voucher not found." });
 
-      if (req.body.totalProductPrice < voucher.minOrderValue) return res.status(400).send({message: "Your order is not enough to use this voucher."});
+      if (req.body.totalProductPrice < voucher.minOrderValue)
+        return res
+          .status(400)
+          .send({ message: "Your order is not enough to use this voucher." });
 
       let discountValue = voucher.value;
 

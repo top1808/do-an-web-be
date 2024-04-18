@@ -4,6 +4,7 @@ const Order = require("../models/Order");
 const { generateID } = require("../utils/functionHelper");
 const Voucher = require("../models/Voucher");
 const notificationController = require("./notificationController");
+const ProductOrder = require("../models/ProductOrder");
 
 const cartController = {
   getCart: async (req, res) => {
@@ -128,13 +129,28 @@ const cartController = {
   pay: async (req, res) => {
     try {
       const customerId = await req.header("userId");
-
+      const orderCode = generateID();
+      
       const data = req.body;
+      // console.log("🚀 ~ pay: ~ data:", data)
+
+      let productOrderIds = [];
+      await Promise.all(
+       data?.products.map(async (item) => {
+          const newProductOrder = new ProductOrder({
+            ...item,
+            orderCode: orderCode,
+          });
+          const productOrder = await newProductOrder.save();
+          productOrderIds.push(productOrder._id);
+        })
+      );
 
       const newOrder = new Order({
         ...data,
+        products: productOrderIds,
         customerCode: customerId,
-        orderCode: generateID(),
+        orderCode: orderCode,
         status: "processing",
         deliveryDate: "",
         voucherCode: data.voucher?.code || "",
