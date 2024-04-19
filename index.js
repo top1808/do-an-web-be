@@ -27,11 +27,14 @@ app.use(
       "https://do-an-web-be.onrender.com",
       "https://do-an-web-fe-git-main-top1808s-projects.vercel.app",
       "https://do-an-web-fe-user-git-main-top1808s-projects.vercel.app",
+      process.env.DOMAIN_FE_MANAGEMENT,
+      process.env.DOMAIN_FE_SALE,
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   })
 );
+
 app.use(express.json({ limit: "30mb" }));
 // app.use(express.static("public"));
 app.use('/public/images', express.static('public/images'))
