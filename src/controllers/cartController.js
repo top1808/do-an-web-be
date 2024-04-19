@@ -22,13 +22,20 @@ const cartController = {
                 status: true,
               }).populate("discountProgram");
 
+              if (productDiscount) {
+                return {
+                  ...item._doc,
+                  productSKU: item.productSKU?.[0],
+                  discount: {
+                    ...productDiscount._doc,
+                    discountProgram: productDiscount["discountProgram"],
+                  },
+                };
+              }
+
               return {
                 ...item._doc,
                 productSKU: item.productSKU?.[0],
-                discount: {
-                  ...productDiscount._doc,
-                  discountProgram: productDiscount["discountProgram"],
-                },
               };
             })
           );
@@ -53,6 +60,7 @@ const cartController = {
           quantity: req.body.quantity,
           totalPrice: req.body.price * req.body.quantity,
         };
+
         const findCart = await Cart.findOne({
           customerId: data.customerId,
           product: data.product,
