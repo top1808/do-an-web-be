@@ -250,7 +250,8 @@ const orderController = {
       const orders = await Order.find({ customerCode: customerId })
         .skip(offset)
         .limit(limit)
-        .sort({ createdAt: -1 });
+        .sort({ createdAt: -1 })
+
       const total = await Order.find({ customerCode: customerId }).count();
 
       res.status(200).send({ orders, total, offset, limit });
@@ -265,25 +266,13 @@ const orderController = {
       const order = await Order.findOne({
         _id: req.params.id,
         customerCode: customerId,
-      });
-
-      const newOrderProducts = await Promise.all(
-        order.products.map(async (product) => {
-          const findProduct = await Product.findById(product.productCode);
-
-          if (findProduct) {
-            return {
-              ...product._doc,
-              image: findProduct._doc.image,
-            };
-          }
-        })
-      );
+      })
+      .populate("productList")
 
       res.status(200).send({
         order: {
           ...order._doc,
-          products: newOrderProducts,
+          products: order?.productList,
         },
       });
     } catch (err) {
