@@ -68,13 +68,8 @@ const reviewController = {
 
   rate: async (req, res) => {
     try {
-      const reviews = req.body.reviews || [];
-      await Promise.all(
-        reviews?.forEach(async (review) => {
-          const newReview = new Review(review);
-          await newReview.save();
-        })
-      );
+      const newReview = new Review(req.body);
+      await newReview.save();
 
       res.status(200).send({ message: "Rate successful." });
     } catch (err) {
