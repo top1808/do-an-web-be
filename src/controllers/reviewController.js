@@ -72,7 +72,7 @@ const reviewController = {
       await Promise.all(
         reviews?.forEach(async (review) => {
           const newReview = new Review(review);
-          const review = await newReview.save();
+          await newReview.save();
         })
       );
 
