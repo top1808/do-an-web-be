@@ -46,14 +46,14 @@ const reviewController = {
    * CUSTOMER *
    ************/
 
-  getReviewByProduct:  async (req, res) => {
+  getReviewByProduct: async (req, res) => {
     try {
       const query = req.query;
       const offset = Number(query?.offset) || 0;
       const limit = Number(query?.limit) || 20;
 
       const reviews = await Review.find({
-        product: req.params.productId
+        product: req.params.productId,
       })
         .sort({ createdAt: -1 })
         .skip(offset)
@@ -68,18 +68,19 @@ const reviewController = {
 
   rate: async (req, res) => {
     try {
-      const newReview = new Review({
-        ...req.body,
-      });
+      const reviews = req.body.reviews || [];
+      await Promise.all(
+        reviews?.forEach(async (review) => {
+          const newReview = new Review(review);
+          const review = await newReview.save();
+        })
+      );
 
-      const review = await newReview.save();
-
-      res.status(200).send({ review, message: "Rate successful." });
+      res.status(200).send({ message: "Rate successful." });
     } catch (err) {
       res.status(500).send(err);
     }
   },
-
 };
 
 module.exports = reviewController;
