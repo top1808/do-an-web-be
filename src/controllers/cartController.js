@@ -6,6 +6,7 @@ const Voucher = require("../models/Voucher");
 const notificationController = require("./notificationController");
 const ProductOrder = require("../models/ProductOrder");
 const ProductDiscount = require("../models/ProductDiscount");
+const Product = require("../models/Product");
 
 const cartController = {
   getCart: async (req, res) => {
@@ -160,9 +161,14 @@ const cartController = {
       let productOrderIds = [];
       await Promise.all(
         data?.products.map(async (item) => {
+          const findProductImage = await Product.findOne({
+            _id: item.productCode
+          }).select("images");
+
           const newProductOrder = new ProductOrder({
             ...item,
             orderCode: orderCode,
+            image: findProductImage._doc.images[0] || "",
           });
           const productOrder = await newProductOrder.save();
           productOrderIds.push(productOrder._id);
