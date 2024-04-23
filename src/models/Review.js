@@ -18,6 +18,10 @@ const reviewSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "Product",
     },
+    productSKU: {
+      type: Schema.Types.ObjectId,
+      ref: "ProductSKU",
+    },
     images: [{
       type: String
     }],
@@ -27,5 +31,17 @@ const reviewSchema = new Schema(
   },
   { timestamps: true }
 );
+
+reviewSchema.virtual("productDetail", {
+  ref: "Product",
+  localField: "product",
+  foreignField: "_id",
+});
+
+reviewSchema.virtual("productSKUDetail", {
+  ref: "ProductSKU",
+  localField: "productSKU",
+  foreignField: "_id",
+});
 
 module.exports = mongoose.model("Review", reviewSchema);

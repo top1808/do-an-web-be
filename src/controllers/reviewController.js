@@ -1,5 +1,6 @@
 const Review = require("../models/Review");
 const ProductOrder = require("../models/ProductOrder");
+const Order = require("../models/Order");
 
 const reviewController = {
   //get
@@ -49,37 +50,38 @@ const reviewController = {
 
   getProductWithoutReview: async (req, res) => {
     try {
+      const customerId = await req.header("userId");
+
       const query = req.query;
       const offset = Number(query?.offset) || 0;
       const limit = Number(query?.limit) || 20;
 
-      const [products, total] = await Promise.all([
-        ProductOrder.aggregate([
-          {
-            $lookup: {
-              from: "Review",
-              localField: "productCode",
-              foreignField: "product",
-              as: "reviews",
-            },
-          },
-          {
-            $match: {
-              reviews: { $eq: [] },
-            },
-          },
-          {
-            $skip: offset,
-          },
-          {
-            $limit: limit,
-          },
-        ]),
-        ProductOrder.countDocuments(),
-      ]);
+      const productIds = [];
+
+      const orders = await Order.find({ customerCode: customerId }).select(
+        "products"
+      );
+
+      orders.forEach((order) => {
+        productIds.push(...order.products);
+      });
+
+      console.log("🚀 ~ getProductWithoutReview: ~ productIds:", productIds);
+
+      const products = await ProductOrder.find({
+        // productCode: { $in: productIds },
+      })
+        .skip(offset)
+        .limit(limit);
+      console.log("🚀 ~ getProductWithoutReview: ~ products:", products)
+
+      const total = await ProductOrder.countDocuments({
+        productCode: { $in: productIds },
+      });
 
       res.status(200).send({ products, total, offset, limit });
     } catch (err) {
+      console.log("🚀 ~ getProductWithoutReview: ~ err:", err);
       res.status(500).send(err);
     }
   },
@@ -123,7 +125,9 @@ const reviewController = {
 
   rate: async (req, res) => {
     try {
-      const newReview = new Review(req.body);
+      const customerId = await req.header("userId");
+
+      const newReview = new Review({ ...req.body, customer: customerId });
       await newReview.save();
 
       res.status(200).send({ message: "Rate successful." });
