@@ -56,32 +56,71 @@ const reviewController = {
       const offset = Number(query?.offset) || 0;
       const limit = Number(query?.limit) || 20;
 
-      const productIds = [];
+      const productOrderIds = [];
 
-      const orders = await Order.find({ customerCode: customerId }).select(
-        "products"
-      );
+      const orders = await Order.find({
+        customerCode: customerId,
+        status: "received",
+      }).select("products");
 
       orders.forEach((order) => {
-        productIds.push(...order.products);
+        productOrderIds.push(...order.products);
       });
 
-      console.log("🚀 ~ getProductWithoutReview: ~ productIds:", productIds);
+      const [result] = await ProductOrder.aggregate([
+        {
+          $facet: {
+            totalCount: [
+              {
+                $match: {
+                  _id: { $in: productOrderIds },
+                },
+              },
+              {
+                $lookup: {
+                  from: "reviews",
+                  localField: "_id",
+                  foreignField: "productOrderId",
+                  as: "reviewList",
+                },
+              },
+              {
+                $match: {
+                  reviewList: { $eq: [] },
+                },
+              },
+              { $count: "total" },
+            ],
+            products: [
+              {
+                $match: {
+                  _id: { $in: productOrderIds },
+                },
+              },
+              {
+                $lookup: {
+                  from: "reviews",
+                  localField: "_id",
+                  foreignField: "productOrderId",
+                  as: "reviewList",
+                },
+              },
+              {
+                $match: {
+                  reviewList: { $eq: [] },
+                },
+              },
+              { $skip: offset },
+              { $limit: limit },
+            ],
+          },
+        },
+      ]);
 
-      const products = await ProductOrder.find({
-        // productCode: { $in: productIds },
-      })
-        .skip(offset)
-        .limit(limit);
-      console.log("🚀 ~ getProductWithoutReview: ~ products:", products)
-
-      const total = await ProductOrder.countDocuments({
-        productCode: { $in: productIds },
-      });
-
-      res.status(200).send({ products, total, offset, limit });
+      res
+        .status(200)
+        .send({ products: result.products, total: result.totalCount?.[0]?.total, offset, limit });
     } catch (err) {
-      console.log("🚀 ~ getProductWithoutReview: ~ err:", err);
       res.status(500).send(err);
     }
   },
@@ -127,7 +166,7 @@ const reviewController = {
     try {
       const customerId = await req.header("userId");
 
-      const newReview = new Review({ ...req.body, customer: customerId });
+      const newReview = new Review({ ...req.body, customerId });
       await newReview.save();
 
       res.status(200).send({ message: "Rate successful." });
