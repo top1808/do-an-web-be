@@ -2,6 +2,8 @@ const DiscountProgram = require("../models/DiscountProgram");
 const Product = require("../models/Product");
 const ProductDiscount = require("../models/ProductDiscount");
 const ProductSKU = require("../models/ProductSKU");
+const Review = require("../models/Review");
+const productService = require("../services/productService");
 const {
   generateBarcode,
   addElementToArrayUnique,
@@ -285,6 +287,7 @@ const productController = {
                 productCode: item._id,
                 status: true,
               }).populate("discountProgram");
+              const rate = await productService.getAvarateRate(item._id);
               if (productDiscounts?.length > 0) {
                 let minPromotionPrice = item._doc.minPrice;
                 let maxPromotionPrice = item._doc.maxPrice;
@@ -306,6 +309,7 @@ const productController = {
                   minPromotionPrice,
                   maxPromotionPrice,
                   discounts,
+                  rate,
                 };
               }
               return item;
@@ -334,6 +338,16 @@ const productController = {
         status: true,
       }).populate("discountProgram");
 
+      const reviews = await Review.find({ product: product._id }).populate("productSKUDetail")
+      .then(data => {
+        return data.map((item) => {
+          return {
+            ...item._doc,
+            productSKU: item["productSKUDetail"]?.[0]
+          }
+        })
+      })
+
       res.status(200).send({
         product: {
           ...product,
@@ -344,6 +358,7 @@ const productController = {
                 discountProgram: elm["discountProgram"],
               }))
             : [],
+          reviews,
         },
       });
     } catch (err) {

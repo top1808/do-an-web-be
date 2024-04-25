@@ -22,8 +22,7 @@ const reviewSchema = new Schema(
       ref: "Product",
     },
     productSKU: {
-      type: Schema.Types.ObjectId,
-      ref: "ProductSKU",
+      type: String,
     },
     orderCode: {
       type: String,
@@ -47,7 +46,7 @@ reviewSchema.virtual("productDetail", {
 reviewSchema.virtual("productSKUDetail", {
   ref: "ProductSKU",
   localField: "productSKU",
-  foreignField: "_id",
+  foreignField: "barcode",
 });
 
 reviewSchema.virtual("orderDetail", {
