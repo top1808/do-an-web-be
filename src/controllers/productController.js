@@ -333,6 +333,8 @@ const productController = {
         return res.status(404).send({ message: "Product is not found." });
       let product = findProduct._doc;
 
+      const rate = await productService.getAvarateRate(product._id);
+
       const productDiscounts = await ProductDiscount.find({
         productCode: product._id,
         status: true,
@@ -359,6 +361,7 @@ const productController = {
               }))
             : [],
           reviews,
+          rate,
         },
       });
     } catch (err) {
