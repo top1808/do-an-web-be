@@ -127,11 +127,15 @@ const reviewController = {
 
   getProductReview: async (req, res) => {
     try {
+      const customerId = await req.header("userId");
+
       const query = req.query;
       const offset = Number(query?.offset) || 0;
       const limit = Number(query?.limit) || 20;
 
-      const reviews = await Review.find()
+      const reviews = await Review.find({
+        customerId: customerId,
+      })
         .sort({ createdAt: -1 })
         .skip(offset)
         .limit(limit);
