@@ -119,7 +119,12 @@ const reviewController = {
 
       res
         .status(200)
-        .send({ products: result.products, total: result.totalCount?.[0]?.total, offset, limit });
+        .send({
+          products: result.products,
+          total: result.totalCount?.[0]?.total,
+          offset,
+          limit,
+        });
     } catch (err) {
       res.status(500).send(err);
     }
@@ -133,13 +138,19 @@ const reviewController = {
       const offset = Number(query?.offset) || 0;
       const limit = Number(query?.limit) || 20;
 
-      const reviews = await Review.find({
-        customerId: customerId,
-      })
-        .sort({ createdAt: -1 })
-        .skip(offset)
-        .limit(limit);
-      const total = await Review.find().count();
+      const reviews = await Review.find({ customerId: customerId })
+        .populate("productSKUDetail")
+        .populate("customer")
+        .then((data) => {
+          return data.map((item) => {
+            return {
+              ...item._doc,
+              productSKU: item["productSKUDetail"]?.[0],
+              customer: item["customer"]?.[0],
+            };
+          });
+        });
+      const total = await Review.find({ customerId: customerId }).count();
 
       res.status(200).send({ reviews, total, offset, limit });
     } catch (err) {
