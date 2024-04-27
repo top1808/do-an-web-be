@@ -340,13 +340,13 @@ const productController = {
         status: true,
       }).populate("discountProgram");
 
-      const reviews = await Review.find({ product: product._id }).populate("productSKUDetail").populate("customer")
+      const reviews = await Review.find({ product: product._id }).populate("productSKUDetail").populate("customer", '-password')
       .then(data => {
         return data.map((item) => {
           return {
             ...item._doc,
             productSKU: item["productSKUDetail"]?.[0],
-            customer: item["customer"]?.[0],
+            customer: item?.isAnonymous ? null : item["customer"]?.[0],
           }
         })
       })
