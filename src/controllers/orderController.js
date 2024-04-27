@@ -57,9 +57,14 @@ const orderController = {
       let productOrderIds = [];
       await Promise.all(
         req.body.products.map(async (item) => {
+          const findProductImage = await Product.findOne({
+            _id: item.productCode,
+          }).select("images");
+
           const newProductOrder = new ProductOrder({
             ...item,
             orderCode: orderCode,
+            image: findProductImage._doc.images[0] || "",
           });
           const productOrder = await newProductOrder.save();
           productOrderIds.push(productOrder._id);
@@ -109,9 +114,14 @@ const orderController = {
               }
             );
           } else {
+            const findProductImage = await Product.findOne({
+              _id: item.productCode,
+            }).select("images");
+
             const newProductOrder = new ProductOrder({
               ...item,
               orderCode: req.body?.orderCode,
+              image: findProductImage._doc.images[0] || "",
             });
             const productOrder = await newProductOrder.save();
             productOrderIds.push(productOrder._id);
@@ -250,7 +260,7 @@ const orderController = {
       const orders = await Order.find({ customerCode: customerId })
         .skip(offset)
         .limit(limit)
-        .sort({ createdAt: -1 })
+        .sort({ createdAt: -1 });
 
       const total = await Order.find({ customerCode: customerId }).count();
 
@@ -266,8 +276,7 @@ const orderController = {
       const order = await Order.findOne({
         _id: req.params.id,
         customerCode: customerId,
-      })
-      .populate("productList")
+      }).populate("productList");
 
       res.status(200).send({
         order: {

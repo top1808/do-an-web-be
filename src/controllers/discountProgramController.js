@@ -221,6 +221,17 @@ const discountProgramController = {
         }
       );
 
+      await ProductDiscount.updateMany(
+        {
+          discountProgramCode: newDiscountProgram["discountProgramCode"],
+        },
+        {
+          $set: {
+            status: updateFields.status === "active",
+          },
+        }
+      );
+
       const notificationAdmin = {
         title: "Discount Program notification",
         body:

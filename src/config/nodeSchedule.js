@@ -1,7 +1,9 @@
 const schedule = require("node-schedule");
 const Voucher = require("../models/Voucher");
 const DiscountProgram = require("../models/DiscountProgram");
-const { CURRENT_DATE } = require("../utils/constant");
+const dayjs = require("dayjs");
+
+const currentDate = dayjs(new Date()).format("YYYY-MM-DD");
 
 const rule = new schedule.RecurrenceRule();
 rule.hour = 0;
@@ -12,7 +14,7 @@ const nodeSchedule = schedule.scheduleJob(rule, async () => {
   try {
     await Voucher.updateMany(
       {
-        dateEnd: { $lt: CURRENT_DATE },
+        dateEnd: { $lt: currentDate },
         status: "active",
       },
       {
@@ -22,7 +24,7 @@ const nodeSchedule = schedule.scheduleJob(rule, async () => {
 
     await Voucher.updateMany(
       {
-        dateEnd: { $gte: CURRENT_DATE },
+        dateEnd: { $gte: currentDate },
         status: "incoming",
       },
       {
@@ -32,7 +34,7 @@ const nodeSchedule = schedule.scheduleJob(rule, async () => {
 
     await DiscountProgram.updateMany(
       {
-        dateEnd: { $lt: CURRENT_DATE },
+        dateEnd: { $lt: currentDate },
         status: "active",
       },
       {
@@ -42,14 +44,13 @@ const nodeSchedule = schedule.scheduleJob(rule, async () => {
 
     await DiscountProgram.updateMany(
       {
-        dateStart: { $gte: CURRENT_DATE },
+        dateStart: { $gte: currentDate },
         status: "incoming",
       },
       {
         $set: { status: "active" },
       }
     );
-
   } catch (error) {
     console.error("Error updating data:", error);
   }

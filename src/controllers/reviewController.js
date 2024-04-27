@@ -1,4 +1,6 @@
 const Review = require("../models/Review");
+const ProductOrder = require("../models/ProductOrder");
+const Order = require("../models/Order");
 
 const reviewController = {
   //get
@@ -46,14 +48,125 @@ const reviewController = {
    * CUSTOMER *
    ************/
 
-  getReviewByProduct:  async (req, res) => {
+  getProductWithoutReview: async (req, res) => {
+    try {
+      const customerId = await req.header("userId");
+
+      const query = req.query;
+      const offset = Number(query?.offset) || 0;
+      const limit = Number(query?.limit) || 20;
+
+      const productOrderIds = [];
+
+      const orders = await Order.find({
+        customerCode: customerId,
+        status: "received",
+      }).select("products");
+
+      orders.forEach((order) => {
+        productOrderIds.push(...order.products);
+      });
+
+      const [result] = await ProductOrder.aggregate([
+        {
+          $facet: {
+            totalCount: [
+              {
+                $match: {
+                  _id: { $in: productOrderIds },
+                },
+              },
+              {
+                $lookup: {
+                  from: "reviews",
+                  localField: "_id",
+                  foreignField: "productOrderId",
+                  as: "reviewList",
+                },
+              },
+              {
+                $match: {
+                  reviewList: { $eq: [] },
+                },
+              },
+              { $count: "total" },
+            ],
+            products: [
+              {
+                $match: {
+                  _id: { $in: productOrderIds },
+                },
+              },
+              {
+                $lookup: {
+                  from: "reviews",
+                  localField: "_id",
+                  foreignField: "productOrderId",
+                  as: "reviewList",
+                },
+              },
+              {
+                $match: {
+                  reviewList: { $eq: [] },
+                },
+              },
+              { $skip: offset },
+              { $limit: limit },
+            ],
+          },
+        },
+      ]);
+
+      res
+        .status(200)
+        .send({
+          products: result.products,
+          total: result.totalCount?.[0]?.total,
+          offset,
+          limit,
+        });
+    } catch (err) {
+      res.status(500).send(err);
+    }
+  },
+
+  getProductReview: async (req, res) => {
+    try {
+      const customerId = await req.header("userId");
+
+      const query = req.query;
+      const offset = Number(query?.offset) || 0;
+      const limit = Number(query?.limit) || 20;
+
+      const reviews = await Review.find({ customerId: customerId })
+        .populate("productDetail")
+        .populate("productSKUDetail")
+        .populate("customer", '-password')
+        .then((data) => {
+          return data.map((item) => {
+            return {
+              ...item._doc,
+              productSKU: item["productSKUDetail"]?.[0],
+              product: item["productDetail"]?.[0],
+              customer: item["customer"]?.[0],
+            };
+          });
+        });
+      const total = await Review.find({ customerId: customerId }).count();
+
+      res.status(200).send({ reviews, total, offset, limit });
+    } catch (err) {
+      res.status(500).send(err);
+    }
+  },
+  getReviewByProduct: async (req, res) => {
     try {
       const query = req.query;
       const offset = Number(query?.offset) || 0;
       const limit = Number(query?.limit) || 20;
 
       const reviews = await Review.find({
-        product: req.params.productId
+        product: req.params.productId,
       })
         .sort({ createdAt: -1 })
         .skip(offset)
@@ -68,18 +181,16 @@ const reviewController = {
 
   rate: async (req, res) => {
     try {
-      const newReview = new Review({
-        ...req.body,
-      });
+      const customerId = await req.header("userId");
 
-      const review = await newReview.save();
+      const newReview = new Review({ ...req.body, customerId });
+      await newReview.save();
 
-      res.status(200).send({ review, message: "Rate successful." });
+      res.status(200).send({ message: "Rate successful." });
     } catch (err) {
       res.status(500).send(err);
     }
   },
-
 };
 
 module.exports = reviewController;

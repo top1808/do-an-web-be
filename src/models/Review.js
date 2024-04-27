@@ -10,13 +10,22 @@ const reviewSchema = new Schema(
     rate: {
       type: Number,
     },
-    customer: {
+    productOrderId: {
       type: Schema.Types.ObjectId,
-      ref: "Customer",
+      ref: "ProductOrder",
+    },
+    customerId: {
+      type: String,
     },
     product: {
       type: Schema.Types.ObjectId,
       ref: "Product",
+    },
+    productSKU: {
+      type: String,
+    },
+    orderCode: {
+      type: String,
     },
     images: [{
       type: String
@@ -27,5 +36,35 @@ const reviewSchema = new Schema(
   },
   { timestamps: true }
 );
+
+reviewSchema.virtual("productDetail", {
+  ref: "Product",
+  localField: "product",
+  foreignField: "_id",
+});
+
+reviewSchema.virtual("productSKUDetail", {
+  ref: "ProductSKU",
+  localField: "productSKU",
+  foreignField: "barcode",
+});
+
+reviewSchema.virtual("orderDetail", {
+  ref: "Order",
+  localField: "orderCode",
+  foreignField: "orderCode",
+});
+
+reviewSchema.virtual("productOrderDetail", {
+  ref: "ProductOrder",
+  localField: "productOrderId",
+  foreignField: "_id",
+});
+
+reviewSchema.virtual("customer", {
+  ref: "Customer",
+  localField: "customerId",
+  foreignField: "id",
+});
 
 module.exports = mongoose.model("Review", reviewSchema);
