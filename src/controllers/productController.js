@@ -340,16 +340,18 @@ const productController = {
         status: true,
       }).populate("discountProgram");
 
-      const reviews = await Review.find({ product: product._id }).populate("productSKUDetail").populate("customer", '-password')
-      .then(data => {
-        return data.map((item) => {
-          return {
-            ...item._doc,
-            productSKU: item["productSKUDetail"]?.[0],
-            customer: item?.isAnonymous ? null : item["customer"]?.[0],
-          }
-        })
-      })
+      const reviews = await Review.find({ product: product._id })
+        .populate("productSKUDetail")
+        .populate("customer", "-password")
+        .then((data) => {
+          return data.map((item) => {
+            return {
+              ...item._doc,
+              productSKU: item["productSKUDetail"]?.[0],
+              customer: item?.isAnonymous ? null : item["customer"]?.[0],
+            };
+          });
+        });
 
       res.status(200).send({
         product: {
@@ -376,22 +378,23 @@ const productController = {
       const offset = Number(query?.offset) || 0;
       const limit = Number(query?.limit) || 12;
 
-      const products = await Product.find(
+      const products = await productService.getProducts(
         req.params.categoryId === "all"
           ? {
               status: "active",
             }
-          : { categoryIds: req.params.categoryId, status: "active" }
-      )
-        .skip(offset)
-        .limit(limit);
+          : { categoryIds: req.params.categoryId, status: "active" },
+        offset,
+        limit
+      );
 
       let total = 0;
       if (req.params.categoryId === "all") {
-        total = await Product.estimatedDocumentCount();
+        total = await Product.countDocuments({ status: "active" });
       } else {
         total = await Product.countDocuments({
           categoryIds: req.params.categoryId,
+          status: "active",
         });
       }
 
@@ -414,7 +417,7 @@ const productController = {
 
       const { categoryIds } = product._doc;
 
-      const products = await Product.find({
+      const products = await productService.getProducts({
         status: "active",
         categoryIds: { $in: categoryIds },
         _id: { $ne: product._id },
@@ -438,7 +441,7 @@ const productController = {
         query.name = { $regex: new RegExp(search, "i") };
       }
 
-      const products = await Product.find(query).populate("categoryIds");
+      const products = await productService.getProducts(query);
 
       res.status(200).send({ products });
     } catch (err) {

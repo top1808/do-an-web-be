@@ -13,7 +13,20 @@ const reviewController = {
       const reviews = await Review.find()
         .sort({ createdAt: -1 })
         .skip(offset)
-        .limit(limit);
+        .limit(limit)
+        .populate("productDetail")
+        .populate("productSKUDetail")
+        .populate("customer", '-password')
+        .then((data) => {
+          return data.map((item) => {
+            return {
+              ...item._doc,
+              productSKU: item["productSKUDetail"]?.[0],
+              product: item["productDetail"]?.[0],
+              customer: item["customer"]?.[0],
+            };
+          });
+        });
       const total = await Review.find().count();
 
       res.status(200).send({ reviews, total, offset, limit });
