@@ -60,10 +60,10 @@ const voucherSchema = new Schema(
 voucherSchema.pre("updateOne", async function (done) {
   const update = this.getUpdate();
   if (update && update.$inc && update.$inc.quantityUsed) {
-    const quantityUsed = update.$inc.quantityUsed;
     const docToUpdate = await this.model.findOne(this.getQuery());
-
+    
     if (docToUpdate) {
+      const quantityUsed = (docToUpdate.quantityUsed || 0) + update.$inc.quantityUsed;
       const quantity = docToUpdate.quantity;
       const quantityLeft = quantity - quantityUsed;
 

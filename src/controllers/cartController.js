@@ -7,6 +7,7 @@ const notificationController = require("./notificationController");
 const ProductOrder = require("../models/ProductOrder");
 const ProductDiscount = require("../models/ProductDiscount");
 const Product = require("../models/Product");
+const inventoryService = require("../services/inventoryService");
 
 const cartController = {
   getCart: async (req, res) => {
@@ -107,6 +108,19 @@ const cartController = {
     try {
       const updateField = req.body;
 
+      const cartItem = await Cart.findById(req.params.id);
+
+      const inventory = await inventoryService.checkProductInventory({
+        ...cartItem._doc,
+        productCode: cartItem._doc.product,
+        quantity: updateField.quantity,
+      });
+
+      if (!inventory.status)
+        return res.status(404).send({
+          message: `Số lượng sản phẩm này trong kho còn ${inventory.inventory.currentQuantity} sản phẩm.`,
+        });
+
       const newCartItem = await Cart.updateOne(
         {
           _id: req.params.id,
@@ -156,24 +170,36 @@ const cartController = {
       const orderCode = generateID();
 
       const data = req.body;
-      // console.log("🚀 ~ pay: ~ data:", data)
 
       let productOrderIds = [];
-      await Promise.all(
-        data?.products.map(async (item) => {
-          const findProductImage = await Product.findOne({
-            _id: item.productCode
-          }).select("images");
 
-          const newProductOrder = new ProductOrder({
-            ...item,
-            orderCode: orderCode,
-            image: findProductImage._doc.images[0] || "",
+      for (let item of data?.products) {
+        const inventory = await inventoryService.checkProductInventory(item);
+        if (!inventory.status)
+          return res.status(404).send({
+            message: `Số lượng sản phẩm ${item.productName} - ${
+              item.options?.[0]?.groupName
+            }: ${item.options?.[0]?.option}${
+              item.options?.[1]
+                ? `, ${item.options?.[1]?.groupName || ""}: ${
+                    item.options?.[1]?.option || ""
+                  }`
+                : ""
+            } trong kho không đủ`,
           });
-          const productOrder = await newProductOrder.save();
-          productOrderIds.push(productOrder._id);
-        })
-      );
+
+        const findProductImage = await Product.findOne({
+          _id: item.productCode,
+        }).select("images");
+
+        const newProductOrder = new ProductOrder({
+          ...item,
+          orderCode: orderCode,
+          image: findProductImage._doc.images[0] || "",
+        });
+        const productOrder = await newProductOrder.save();
+        productOrderIds.push(productOrder._id);
+      }
 
       const newOrder = new Order({
         ...data,

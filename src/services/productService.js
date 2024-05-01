@@ -1,5 +1,6 @@
 const Product = require("../models/Product");
 const ProductDiscount = require("../models/ProductDiscount");
+const ProductOrder = require("../models/ProductOrder");
 const Review = require("../models/Review");
 
 const productService = {
@@ -60,7 +61,17 @@ const productService = {
           })
         );
       });
-  }
+  },
+
+  async getSoldProduct() {
+    return await ProductOrder.find().populate("order")
+    .then(data => {
+      return data.map(item => {
+        return item._doc;
+      })
+    })
+  },
+
 };
 
 module.exports = productService;

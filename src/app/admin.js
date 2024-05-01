@@ -14,6 +14,7 @@ const statisticRoute = require('../routes/admin/statistic');
 const discountProgramRoute = require('../routes/admin/discountProgram');
 const notificationRoute = require('../routes/admin/notification');
 const reviewRoute = require('../routes/admin/review');
+const inventoryRoute = require('../routes/admin/inventory');
 
 router.use("/auth", authRoute);
 
@@ -33,6 +34,7 @@ router.use("/voucher", voucherRoute);
 router.use("/discount-program", discountProgramRoute);
 router.use("/statistic", statisticRoute);
 router.use("/review", reviewRoute);
+router.use("/inventory", inventoryRoute);
 
 module.exports = router;
 

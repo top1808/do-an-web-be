@@ -9,13 +9,28 @@ const inventorySchema = new Schema(
       required: true,
     },
     productSKUBarcode: {
-      type: Schema.Types.ObjectId,
-      ref: "ProductSKU",
+      type: String,
       required: true,
+      unique: true,
     },
-    quantity: {
+    originalQuantity: {
       type: Number,
+      min: 0,
     },
+    soldQuantity: {
+      type: Number,
+      min: 0,
+    },
+    currentQuantity: {
+      type: Number,
+      min: 0,
+    },
+    historyImportId: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "InventoryImportHistory",
+      },
+    ],
   },
   { timestamps: true }
 );
@@ -30,6 +45,12 @@ inventorySchema.virtual("productSKU", {
   ref: "ProductSKU",
   localField: "productSKUBarcode",
   foreignField: "barcode",
+});
+
+inventorySchema.virtual("historyImport", {
+  ref: "InventoryImportHistory",
+  localField: "historyImportId",
+  foreignField: "_id",
 });
 
 module.exports = mongoose.model("Inventory", inventorySchema);

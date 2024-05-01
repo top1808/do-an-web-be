@@ -134,6 +134,8 @@ const customerController = {
 
   getById: async (req, res) => {
     try {
+      const customerId = await req.header("userId");
+
       const customer = await Customer.findOne({ id: req.params.id });
       if (customer) {
         const { password, ...rest } = customer._doc;
