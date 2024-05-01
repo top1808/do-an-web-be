@@ -32,7 +32,6 @@ const inventoryService = {
   },
 
   checkProductInventory: async (product) => {
-    console.log("🚀 ~ checkProductInventory: ~ product:", product)
     const inventory = await inventoryService.getProductInventory(product);
     if (inventory._doc.currentQuantity >= product.quantity) {
       return {
