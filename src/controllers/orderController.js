@@ -1,6 +1,9 @@
+const Inventory = require("../models/Inventory");
 const Order = require("../models/Order");
 const Product = require("../models/Product");
 const ProductOrder = require("../models/ProductOrder");
+const Voucher = require("../models/Voucher");
+const inventoryService = require("../services/inventoryService");
 const { generateID } = require("../utils/functionHelper");
 const notificationController = require("./notificationController");
 
@@ -176,6 +179,29 @@ const orderController = {
         reasonCancel: req.body?.reason || "",
       };
 
+      const productsNotEnoughQuantity = [];
+      const order = await Order.findById(req.params.id).populate("productList");
+
+      if (updateFields.status === "confirmed") {
+        for (let product of order["productList"]) {
+          const inventory = await inventoryService.checkProductInventory(
+            product
+          );
+          if (!inventory.status) productsNotEnoughQuantity.push(product);
+        }
+      }
+
+      if (productsNotEnoughQuantity.length > 0) {
+        return res.status(500).send({
+          message: `Những sản phẩm có mã barcode sau không đủ số lượng trong kho: ${productsNotEnoughQuantity
+            .reduce((acc, elm) => {
+              acc += elm.productSKUBarcode + ", ";
+              return acc;
+            }, "")
+            .slice(0, -2)}`,
+        });
+      }
+
       for (const key in updateFields) {
         if (!updateFields[key]) delete updateFields[key];
       }
@@ -188,6 +214,41 @@ const orderController = {
           $set: updateFields,
         }
       );
+
+      if (updateFields.status === "canceled" && order["voucherCode"]) {
+        await Voucher.updateOne({
+          code: order["voucherCode"],
+        }, {
+          $inc: {
+            quantityUsed: -1,
+          }
+        })
+      }
+
+      for (let product of order["productList"]) {
+        await Inventory.findOneAndUpdate(
+          {
+            productSKUBarcode: product["productSKUBarcode"],
+            productCode: product["productCode"],
+          },
+          {
+            $inc: {
+              soldQuantity:
+                updateFields.status === "confirmed"
+                  ? product["quantity"]
+                  : updateFields.status === "canceled"
+                  ? -product["quantity"]
+                  : 0,
+              currentQuantity:
+                updateFields.status === "confirmed"
+                  ? -product["quantity"]
+                  : updateFields.status === "canceled"
+                  ? product["quantity"]
+                  : 0,
+            },
+          }
+        );
+      }
 
       const notificationAdmin = {
         title: "Order notification",
