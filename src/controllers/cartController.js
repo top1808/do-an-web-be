@@ -69,6 +69,17 @@ const cartController = {
           productSKUBarcode: data?.productSKUBarcode,
         });
 
+        const inventory = await inventoryService.checkProductInventory({
+          productSKUBarcode: data.productSKUBarcode,
+          productCode: data.product,
+          quantity: (findCart?._doc?.quantity || 0) + data.quantity,
+        });
+
+        if (!inventory.status)
+          return res.status(404).send({
+            message: `Số lượng sản phẩm này trong kho còn ${inventory.inventory.currentQuantity} sản phẩm.`,
+          });
+
         if (findCart) {
           if (findCart.quantity + data.quantity > 99) {
             return res.status(400).send({
@@ -76,6 +87,7 @@ const cartController = {
                 "Bạn chỉ có thể thêm số lượng tối đa 99 trên mỗi sản phẩm.",
             });
           }
+
           await Cart.updateOne(
             {
               _id: findCart._id,
@@ -101,6 +113,7 @@ const cartController = {
       }
       res.status(403).send("Bạn chưa đăng nhập.");
     } catch (err) {
+      console.log("🚀 ~ addToCart: ~ err:", err);
       res.status(500).send(err);
     }
   },
