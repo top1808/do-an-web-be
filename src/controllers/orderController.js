@@ -236,13 +236,13 @@ const orderController = {
               soldQuantity:
                 updateFields.status === "confirmed"
                   ? product["quantity"]
-                  : updateFields.status === "canceled"
+                  : order["status"] !== "processing" && updateFields.status === "canceled"
                   ? -product["quantity"]
                   : 0,
               currentQuantity:
                 updateFields.status === "confirmed"
                   ? -product["quantity"]
-                  : updateFields.status === "canceled"
+                  : order["status"] !== "processing" && updateFields.status === "canceled"
                   ? product["quantity"]
                   : 0,
             },
