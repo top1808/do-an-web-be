@@ -121,20 +121,34 @@ const cartController = {
 
       if (updateField?.isChecked) {
         const cartItem = await Cart.findById(req.params.id);
-  
+
         const inventory = await inventoryService.checkProductInventory({
           ...cartItem._doc,
           productCode: cartItem._doc.product,
           quantity: updateField.quantity,
         });
-  
-        if (!inventory.status)
+
+        if (!inventory.status) {
+          const cartItem = await Cart.findOneAndUpdate(
+            {
+              _id: req.params.id,
+            },
+            {
+              $set: {
+                ...updateField,
+                quantity: inventory.inventory.currentQuantity || 1,
+              },
+            },
+            {
+              new: true,
+            }
+          );
           return res.status(404).send({
             cartItem,
             message: `Số lượng sản phẩm này trong kho còn ${inventory.inventory.currentQuantity} sản phẩm.`,
           });
+        }
       }
-
 
       const newCartItem = await Cart.updateOne(
         {
@@ -254,7 +268,9 @@ const cartController = {
         const productsDelete = data.products.map((p) => p.cartId);
         await Cart.deleteMany({ _id: { $in: productsDelete } });
 
-        return res.status(200).send({ order, message: "Thanh toán thành công." });
+        return res
+          .status(200)
+          .send({ order, message: "Thanh toán thành công." });
       }
       res.status(403).send({ message: "Bạn chưa đăng nhập." });
     } catch (err) {
