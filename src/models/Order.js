@@ -41,6 +41,30 @@ const orderSchema = new Schema(
       type: String,
       required: true,
     },
+    customerProvince: {
+      value: {
+        type: Number,
+      },
+      label: {
+        type: String,
+      },
+    },
+    customerDistrict: {
+      value: {
+        type: Number,
+      },
+      label: {
+        type: String,
+      },
+    },
+    customerWard: {
+      value: {
+        type: Number,
+      },
+      label: {
+        type: String,
+      },
+    },
     deliveryAddress: {
       type: String,
     },
