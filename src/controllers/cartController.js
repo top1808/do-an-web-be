@@ -259,6 +259,14 @@ const cartController = {
         await notificationController.create(req, notification);
 
         if (data.voucher) {
+          const findVoucher = await Voucher.findOne({
+            code: data.voucher.code,
+          });
+          if (findVoucher["quantityLeft"] < 1) {
+            return res
+              .status(404)
+              .send({ message: "Voucher bạn sử dụng đã hết số lượng." });
+          }
           await Voucher.updateOne(
             { code: data.voucher.code },
             { $inc: { quantityUsed: 1 } }

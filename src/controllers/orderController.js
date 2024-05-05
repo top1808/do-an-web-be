@@ -4,6 +4,7 @@ const Product = require("../models/Product");
 const ProductOrder = require("../models/ProductOrder");
 const Voucher = require("../models/Voucher");
 const inventoryService = require("../services/inventoryService");
+const orderService = require("../services/orderService");
 const { generateID } = require("../utils/functionHelper");
 const notificationController = require("./notificationController");
 
@@ -184,10 +185,8 @@ const orderController = {
 
       if (updateFields.status === "confirmed") {
         for (let product of order["productList"]) {
-          const inventory = await inventoryService.checkProductInventory(
-            product
-          );
-          if (!inventory.status) productsNotEnoughQuantity.push(product);
+          const result = await orderService.handleMultipleRequest(product, res);
+          if (!result.status) productsNotEnoughQuantity.push(result?.product);
         }
       }
 

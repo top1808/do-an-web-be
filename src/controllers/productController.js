@@ -3,6 +3,7 @@ const Product = require("../models/Product");
 const ProductDiscount = require("../models/ProductDiscount");
 const ProductSKU = require("../models/ProductSKU");
 const Review = require("../models/Review");
+const inventoryService = require("../services/inventoryService");
 const productService = require("../services/productService");
 const {
   generateBarcode,
@@ -353,10 +354,19 @@ const productController = {
           });
         });
 
+      const productSKUList = [];
+      for (let productSKU of findProduct.productSKUDetails) {
+        const inventory = await inventoryService.getProductInventory({
+          productCode: productSKU["productId"],
+          productSKUBarcode: productSKU["barcode"],
+        });
+        productSKUList.push({ ...productSKU._doc, inventory });
+      }
+
       res.status(200).send({
         product: {
           ...product,
-          productSKUList: findProduct.productSKUDetails,
+          productSKUList,
           discounts: productDiscounts
             ? productDiscounts.map((elm) => ({
                 ...elm._doc,
@@ -368,6 +378,7 @@ const productController = {
         },
       });
     } catch (err) {
+      console.log("🚀 ~ getProductDetails: ~ err:", err);
       res.status(500).send(err);
     }
   },
