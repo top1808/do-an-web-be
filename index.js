@@ -7,8 +7,8 @@ const database = require("./src/config/database");
 const firebase = require("./src/config/firebase");
 const pusher = require("./src/config/pusher");
 const nodeSchedule = require("./src/config/nodeSchedule");
-const initRedis = require("./src/config/redis");
-initRedis.initRedis();
+const { initRedis } = require("./src/config/redis");
+initRedis();
 const adminRoutes = require("./src/app/admin");
 const customerRoutes = require("./src/app/customer");
 const webRoutes = require("./src/app/web");
@@ -39,7 +39,7 @@ app.use(
 
 app.use(express.json({ limit: "30mb" }));
 // app.use(express.static("public"));
-app.use('/public/images', express.static('public/images'))
+app.use("/public/images", express.static("public/images"));
 
 app.use(bodyParser.json({ limit: "30mb" }));
 app.use(bodyParser.urlencoded({ extended: true, limit: "30mb" }));
