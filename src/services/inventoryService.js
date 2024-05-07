@@ -21,7 +21,6 @@ const inventoryService = {
       });
   },
   getTotalInventories: async (query) => {
-    console.log("🚀 ~ getTotalInventories: ~ query:", query)
     return await Inventory.countDocuments(query);
   },
 

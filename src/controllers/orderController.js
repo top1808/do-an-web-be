@@ -170,13 +170,176 @@ const orderController = {
 
   changeStatus: async (req, res) => {
     try {
-      const customerId = await req.header("userId");
-
       const updateFields = {
         status: req.body.status,
         deliveryAddress: req.body?.deliveryAddress || "",
         deliveryDate: req.body?.deliveryDate || "",
         receivedDate: req.body?.receivedDate || "",
+        reasonCancel: req.body?.reason || "",
+      };
+
+      const productsNotEnoughQuantity = [];
+      const order = await Order.findById(req.params.id).populate("productList");
+
+      if (updateFields.status === "confirmed") {
+        for (let product of order["productList"]) {
+          const result = await orderService.handleMultipleRequest(product, res);
+          if (!result.status) productsNotEnoughQuantity.push(result?.product);
+        }
+      }
+
+      if (productsNotEnoughQuantity.length > 0) {
+        return res.status(404).send({
+          message: `Những sản phẩm có mã barcode sau không đủ số lượng trong kho: ${productsNotEnoughQuantity
+            .reduce((acc, elm) => {
+              acc += elm.productSKUBarcode + ", ";
+              return acc;
+            }, "")
+            .slice(0, -2)}`,
+        });
+      }
+
+      for (const key in updateFields) {
+        if (!updateFields[key]) delete updateFields[key];
+      }
+
+      const newOrder = await Order.findOneAndUpdate(
+        {
+          _id: req.params.id,
+        },
+        {
+          $set: updateFields,
+        }
+      );
+
+      if (updateFields.status === "canceled" && order["voucherCode"]) {
+        await Voucher.updateOne(
+          {
+            code: order["voucherCode"],
+          },
+          {
+            $inc: {
+              quantityUsed: -1,
+            },
+          }
+        );
+      }
+
+      for (let product of order["productList"]) {
+        await Inventory.findOneAndUpdate(
+          {
+            productSKUBarcode: product["productSKUBarcode"],
+            productCode: product["productCode"],
+          },
+          {
+            $inc: {
+              soldQuantity:
+                updateFields.status === "confirmed"
+                  ? product["quantity"]
+                  : order["status"] !== "processing" &&
+                    updateFields.status === "canceled"
+                  ? -product["quantity"]
+                  : 0,
+              currentQuantity:
+                updateFields.status === "confirmed"
+                  ? -product["quantity"]
+                  : order["status"] !== "processing" &&
+                    updateFields.status === "canceled"
+                  ? product["quantity"]
+                  : 0,
+            },
+          }
+        );
+      }
+
+      const notificationCustomer = {
+        title: "Order notification",
+        body: `Your order ${newOrder["orderCode"]} is ${updateFields.status}`,
+        image: "",
+        link: "/profile/purchased",
+        fromUserId: req.user?._id,
+        toUserId: newOrder["customerCode"],
+      };
+      await notificationController.create(req, notificationCustomer);
+
+      res.status(200).send({
+        id: req.params.id,
+        message: `${updateFields.status?.toUpperCase()} order successful.`,
+      });
+    } catch (err) {
+      res.status(500).send(err);
+    }
+  },
+
+  getById: async (req, res) => {
+    try {
+      const findOrder = await Order.findById(req.params.id).populate([
+        "voucher",
+        "productList",
+      ]);
+
+      const order = {
+        ...findOrder._doc,
+        voucher: findOrder.voucher,
+        products: findOrder.productList,
+      };
+
+      res.status(200).send({ order });
+    } catch (err) {
+      res.status(500).send(err);
+    }
+  },
+
+  /************
+   * CUSTOMER *
+   ************/
+  getMyOrder: async (req, res) => {
+    try {
+      const customerId = await req.header("userId");
+
+      const query = req.query;
+      const offset = Number(query?.offset) || 0;
+      const limit = Number(query?.limit) || 20;
+      const status = query?.status || "all";
+
+      const orders = await Order.find({ customerCode: customerId })
+        .skip(offset)
+        .limit(limit)
+        .sort({ createdAt: -1 });
+
+      const total = await Order.find({ customerCode: customerId }).count();
+
+      res.status(200).send({ orders, total, offset, limit });
+    } catch (err) {
+      res.status(500).send(err);
+    }
+  },
+  getMyOrderDetails: async (req, res) => {
+    try {
+      const customerId = await req.header("userId");
+
+      const order = await Order.findOne({
+        _id: req.params.id,
+        customerCode: customerId,
+      }).populate("productList");
+
+      res.status(200).send({
+        order: {
+          ...order._doc,
+          products: order?.productList,
+        },
+      });
+    } catch (err) {
+      res.status(500).send(err);
+    }
+  },
+
+  changeStatusCustomer: async (req, res) => {
+    try {
+      const customerId = await req.header("userId");
+
+      const updateFields = {
+        status: req.body.status,
         reasonCancel: req.body?.reason || "",
       };
 
@@ -260,100 +423,22 @@ const orderController = {
         );
       }
 
-      const notificationAdmin = {
+      const notification = {
         title: "Order notification",
         body:
-          (customerId
-            ? `Customer ${newOrder["customerName"]}`
-            : req.user?.name || "No name") +
+          (customerId ? `Customer ${newOrder["customerName"]}` : "") +
           ` ${updateFields.status} order ` +
           newOrder["orderCode"],
         image: "",
         link: "/order",
-        fromUserId: customerId || req.user?._id,
+        fromUserId: customerId || "",
         toUserId: "admin",
       };
-      await notificationController.create(req, notificationAdmin);
-
-      if (!customerId) {
-        //Notification customer
-        const notificationCustomer = {
-          title: "Order notification",
-          body: `Your order ${newOrder["orderCode"]} is ${updateFields.status}`,
-          image: "",
-          link: "/profile/purchased",
-          fromUserId: req.user?._id,
-          toUserId: newOrder["customerCode"],
-        };
-        await notificationController.create(req, notificationCustomer);
-      }
+      await notificationController.create(req, notification);
 
       res.status(200).send({
         id: req.params.id,
         message: `${updateFields.status?.toUpperCase()} order successful.`,
-      });
-    } catch (err) {
-      res.status(500).send(err);
-    }
-  },
-
-  getById: async (req, res) => {
-    try {
-      const findOrder = await Order.findById(req.params.id).populate([
-        "voucher",
-        "productList",
-      ]);
-
-      const order = {
-        ...findOrder._doc,
-        voucher: findOrder.voucher,
-        products: findOrder.productList,
-      };
-
-      res.status(200).send({ order });
-    } catch (err) {
-      res.status(500).send(err);
-    }
-  },
-
-  /************
-   * CUSTOMER *
-   ************/
-  getMyOrder: async (req, res) => {
-    try {
-      const customerId = await req.header("userId");
-
-      const query = req.query;
-      const offset = Number(query?.offset) || 0;
-      const limit = Number(query?.limit) || 20;
-      const status = query?.status || "all";
-
-      const orders = await Order.find({ customerCode: customerId })
-        .skip(offset)
-        .limit(limit)
-        .sort({ createdAt: -1 });
-
-      const total = await Order.find({ customerCode: customerId }).count();
-
-      res.status(200).send({ orders, total, offset, limit });
-    } catch (err) {
-      res.status(500).send(err);
-    }
-  },
-  getMyOrderDetails: async (req, res) => {
-    try {
-      const customerId = await req.header("userId");
-
-      const order = await Order.findOne({
-        _id: req.params.id,
-        customerCode: customerId,
-      }).populate("productList");
-
-      res.status(200).send({
-        order: {
-          ...order._doc,
-          products: order?.productList,
-        },
       });
     } catch (err) {
       res.status(500).send(err);
