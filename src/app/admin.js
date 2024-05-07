@@ -18,11 +18,11 @@ const inventoryRoute = require('../routes/admin/inventory');
 
 router.use("/auth", authRoute);
 
-router.use(middlewareController.verifyToken);
+// router.use(middlewareController.verifyToken);
 
 router.use("/notification", notificationRoute);
 
-router.use(middlewareController.checkPermission);
+// router.use(middlewareController.checkPermission);
 
 router.use("/authorize", roleRoute);
 router.use("/user", userRoute);

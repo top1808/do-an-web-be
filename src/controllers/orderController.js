@@ -340,17 +340,26 @@ const orderController = {
 
       const updateFields = {
         status: req.body.status,
+        receivedDate: req.body?.receivedDate || "",
         reasonCancel: req.body?.reason || "",
       };
 
-      if (customerId && updateFields.status !== "processing") {
-        return res.status(405).send({
-          message: "Bạn không thể hủy đơn hàng. ",
-        });
+      for (const key in updateFields) {
+        if (!updateFields[key]) delete updateFields[key];
       }
 
       const productsNotEnoughQuantity = [];
       const order = await Order.findById(req.params.id).populate("productList");
+
+      if (
+        customerId &&
+        updateFields.status === "canceled" &&
+        order["status"] !== "processing"
+      ) {
+        return res.status(405).send({
+          message: "Bạn không thể hủy đơn hàng. ",
+        });
+      }
 
       if (updateFields.status === "confirmed") {
         for (let product of order["productList"]) {
@@ -368,10 +377,6 @@ const orderController = {
             }, "")
             .slice(0, -2)}`,
         });
-      }
-
-      for (const key in updateFields) {
-        if (!updateFields[key]) delete updateFields[key];
       }
 
       const newOrder = await Order.findOneAndUpdate(
