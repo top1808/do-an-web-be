@@ -29,7 +29,22 @@ const addElementToArrayUnique = (array = [], element) => {
   return array;
 };
 
+const getListDateFromStartToEnd = (startDate, endDate) => {
+  if (!startDate || !endDate) return [];
+  startDate = dayjs(startDate).format("YYYY-MM-DD");
+  endDate = dayjs(endDate).format("YYYY-MM-DD");
+
+  const dates = [];
+  let currentDate = startDate;
+  while (currentDate <= endDate) {
+    dates.push(currentDate);
+    currentDate = dayjs(currentDate).add(1, "day").format("YYYY-MM-DD");
+  }
+  return dates;
+};
+
 module.exports = {
+  getListDateFromStartToEnd,
   generateID,
   generateBarcode,
   removeDiacriticsFromString,

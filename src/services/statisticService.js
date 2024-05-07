@@ -1,23 +1,24 @@
 const Order = require("../models/Order");
-const ProductOrder = require("../models/ProductOrder");
 
 const statisticService = {
-  getAmountSaleOfDay: async (day) => {
-    const startDate = day + "T00:00:00.000Z";
-    const endDate = day + "T23:59:59.999Z";
+  getSaleOfDate: async (date) => {
     const orders = await Order.find({
-      receivedDate: {
-        $gte: startDate,
-        $lt: endDate,
-      },
+      receivedDate: date,
       status: "received",
     }).populate("productList");
-
+    let totalAmount = 0;
+    let totalQuantity = 0;
     for (let order of orders) {
       for (let product of order["productList"]) {
-        console.log("🚀 ~ getAmountSaleOfDay: ~ product:", product);
+        totalAmount += Number(product["totalPrice"]);
+        totalQuantity += Number(product["quantity"]);
       }
     }
+    return {
+      totalAmount,
+      totalQuantity,
+      date,
+    };
   },
 };
 
