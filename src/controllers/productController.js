@@ -1,13 +1,10 @@
-const DiscountProgram = require("../models/DiscountProgram");
 const Product = require("../models/Product");
 const ProductDiscount = require("../models/ProductDiscount");
 const ProductSKU = require("../models/ProductSKU");
 const Review = require("../models/Review");
+const inventoryService = require("../services/inventoryService");
 const productService = require("../services/productService");
-const {
-  generateBarcode,
-  addElementToArrayUnique,
-} = require("../utils/functionHelper");
+const { generateBarcode } = require("../utils/functionHelper");
 const notificationController = require("./notificationController");
 
 const productController = {
@@ -353,10 +350,21 @@ const productController = {
           });
         });
 
+      const productSKUList = [];
+      let soldQuantityOfProduct = 0;
+      for (let productSKU of findProduct.productSKUDetails) {
+        const inventory = await inventoryService.getProductInventory({
+          productCode: productSKU["productId"],
+          productSKUBarcode: productSKU["barcode"],
+        });
+        soldQuantityOfProduct += Number(inventory["soldQuantity"]) || 0;
+        productSKUList.push({ ...productSKU._doc, inventory });
+      }
+
       res.status(200).send({
         product: {
           ...product,
-          productSKUList: findProduct.productSKUDetails,
+          productSKUList,
           discounts: productDiscounts
             ? productDiscounts.map((elm) => ({
                 ...elm._doc,
@@ -365,6 +373,7 @@ const productController = {
             : [],
           reviews,
           rate,
+          soldQuantityOfProduct,
         },
       });
     } catch (err) {

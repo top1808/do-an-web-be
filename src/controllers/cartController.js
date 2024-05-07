@@ -1,4 +1,3 @@
-const dayjs = require("dayjs");
 const Cart = require("../models/Cart");
 const Order = require("../models/Order");
 const { generateID } = require("../utils/functionHelper");
@@ -113,7 +112,6 @@ const cartController = {
       }
       res.status(403).send("Bạn chưa đăng nhập.");
     } catch (err) {
-      console.log("🚀 ~ addToCart: ~ err:", err);
       res.status(500).send(err);
     }
   },
@@ -121,18 +119,36 @@ const cartController = {
     try {
       const updateField = req.body;
 
-      const cartItem = await Cart.findById(req.params.id);
+      if (updateField?.isChecked) {
+        const cartItem = await Cart.findById(req.params.id);
 
-      const inventory = await inventoryService.checkProductInventory({
-        ...cartItem._doc,
-        productCode: cartItem._doc.product,
-        quantity: updateField.quantity,
-      });
-
-      if (!inventory.status)
-        return res.status(404).send({
-          message: `Số lượng sản phẩm này trong kho còn ${inventory.inventory.currentQuantity} sản phẩm.`,
+        const inventory = await inventoryService.checkProductInventory({
+          ...cartItem._doc,
+          productCode: cartItem._doc.product,
+          quantity: updateField.quantity,
         });
+
+        if (!inventory.status) {
+          const cartItem = await Cart.findOneAndUpdate(
+            {
+              _id: req.params.id,
+            },
+            {
+              $set: {
+                ...updateField,
+                quantity: inventory.inventory.currentQuantity || 1,
+              },
+            },
+            {
+              new: true,
+            }
+          );
+          return res.status(404).send({
+            cartItem,
+            message: `Số lượng sản phẩm này trong kho còn ${inventory.inventory.currentQuantity} sản phẩm.`,
+          });
+        }
+      }
 
       const newCartItem = await Cart.updateOne(
         {
@@ -180,78 +196,91 @@ const cartController = {
   pay: async (req, res) => {
     try {
       const customerId = await req.header("userId");
-      const orderCode = generateID();
+      if (customerId) {
+        const orderCode = generateID();
 
-      const data = req.body;
+        const data = req.body;
 
-      let productOrderIds = [];
+        let productOrderIds = [];
 
-      for (let item of data?.products) {
-        const inventory = await inventoryService.checkProductInventory(item);
-        if (!inventory.status)
-          return res.status(404).send({
-            message: `Số lượng sản phẩm ${item.productName} - ${
-              item.options?.[0]?.groupName
-            }: ${item.options?.[0]?.option}${
-              item.options?.[1]
-                ? `, ${item.options?.[1]?.groupName || ""}: ${
-                    item.options?.[1]?.option || ""
-                  }`
-                : ""
-            } trong kho không đủ`,
+        for (let item of data?.products) {
+          const inventory = await inventoryService.checkProductInventory(item);
+          if (!inventory.status)
+            return res.status(404).send({
+              message: `Số lượng sản phẩm ${item.productName} - ${
+                item.options?.[0]?.groupName
+              }: ${item.options?.[0]?.option}${
+                item.options?.[1]
+                  ? `, ${item.options?.[1]?.groupName || ""}: ${
+                      item.options?.[1]?.option || ""
+                    }`
+                  : ""
+              } trong kho không đủ`,
+            });
+
+          const findProductImage = await Product.findOne({
+            _id: item.productCode,
+          }).select("images");
+
+          const newProductOrder = new ProductOrder({
+            ...item,
+            orderCode: orderCode,
+            image: findProductImage._doc.images[0] || "",
           });
+          const productOrder = await newProductOrder.save();
+          productOrderIds.push(productOrder._id);
+        }
 
-        const findProductImage = await Product.findOne({
-          _id: item.productCode,
-        }).select("images");
-
-        const newProductOrder = new ProductOrder({
-          ...item,
+        const newOrder = new Order({
+          ...data,
+          products: productOrderIds,
+          customerCode: customerId,
           orderCode: orderCode,
-          image: findProductImage._doc.images[0] || "",
+          status: "processing",
+          deliveryDate: "",
+          voucherCode: data.voucher?.code || "",
+          voucherDiscount: data.voucher?.discountValue || 0,
+          totalPrice:
+            data.totalProductPrice +
+            data.deliveryFee -
+            (data.voucher?.discountValue || 0),
         });
-        const productOrder = await newProductOrder.save();
-        productOrderIds.push(productOrder._id);
+
+        const order = await newOrder.save();
+
+        const notification = {
+          title: "New Order",
+          body: `Customer placed an order with order code ${newOrder?.orderCode}`,
+          image: "",
+          link: "/order",
+          fromUserId: customerId,
+          toUserId: "admin",
+        };
+        await notificationController.create(req, notification);
+
+        if (data.voucher) {
+          const findVoucher = await Voucher.findOne({
+            code: data.voucher.code,
+          });
+          if (findVoucher["quantityLeft"] < 1) {
+            return res
+              .status(404)
+              .send({ message: "Voucher bạn sử dụng đã hết số lượng." });
+          }
+          await Voucher.updateOne(
+            { code: data.voucher.code },
+            { $inc: { quantityUsed: 1 } }
+          );
+        }
+
+        const productsDelete = data.products.map((p) => p.cartId);
+        await Cart.deleteMany({ _id: { $in: productsDelete } });
+
+        return res
+          .status(200)
+          .send({ order, message: "Thanh toán thành công." });
       }
-
-      const newOrder = new Order({
-        ...data,
-        products: productOrderIds,
-        customerCode: customerId,
-        orderCode: orderCode,
-        status: "processing",
-        deliveryDate: "",
-        voucherCode: data.voucher?.code || "",
-        voucherDiscount: data.voucher?.discountValue || 0,
-        totalPrice:
-          data.totalProductPrice +
-          data.deliveryFee -
-          (data.voucher?.discountValue || 0),
-      });
-
-      const order = await newOrder.save();
-
-      const notification = {
-        title: "New Order",
-        body: `Customer placed an order with order code ${newOrder?.orderCode}`,
-        image: "",
-        link: "/order",
-        fromUserId: customerId,
-        toUserId: "admin",
-      };
-      await notificationController.create(req, notification);
-
-      if (data.voucher) {
-        await Voucher.updateOne(
-          { code: data.voucher.code },
-          { $inc: { quantityUsed: 1 } }
-        );
-      }
-
-      const productsDelete = data.products.map((p) => p.cartId);
-      await Cart.deleteMany({ _id: { $in: productsDelete } });
-
-      res.status(200).send({ order, message: "Thanh toán thành công." });
+      res.status(403).send({ message: "Bạn chưa đăng nhập." });
     } catch (err) {
       res.status(500).send(err);
     }

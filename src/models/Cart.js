@@ -4,6 +4,10 @@ const Schema = mongoose.Schema;
 
 const cartSchema = new Schema(
   {
+    isChecked: {
+      type: Boolean,
+      default: true,
+    },
     customerId: {
       type: String,
       required: true,

@@ -9,17 +9,29 @@ const inventoryController = {
   getData: async (req, res) => {
     try {
       const query = req.query;
+
       const offset = Number(query?.offset) || 0;
       const limit = Number(query?.limit) || 20;
 
+      let myQuery = {};
+      if (query?.currentQuantity === "low_on_stock") {
+        myQuery = {
+          currentQuantity: { $lte: 10, $gt: 0 },
+        };
+      } else if (query?.currentQuantity === "out_of_stock") {
+        myQuery = {
+          currentQuantity: { $eq: 0 },
+        };
+      }
+
       const inventories = await inventoryService.getInventories(
-        query,
+        myQuery,
         offset,
         limit
       );
-      const total = await inventoryService.getTotalInventories(query);
+      const total = await inventoryService.getTotalInventories(myQuery);
 
-      res.status(200).send({ inventories, total, offset, limit });
+      res.status(200).send({ inventories, query });
     } catch (err) {
       res.status(500).send(err);
     }
@@ -118,39 +130,39 @@ const inventoryController = {
 
   deleteHistoryImport: async (req, res) => {
     try {
-      const productSold = await productService.getSoldProduct();
-      console.log("🚀 ~ deleteHistoryImport: ~ productSold:", productSold)
-      // const inventory = await InventoryImportHistory.findByIdAndDelete(
-      //   req.params.id
-      // );
+      const findInventory = await Inventory.findById(req.body.inventoryId);
+      const inventory = await InventoryImportHistory.findById(req.params.id);
 
-      // await Inventory.findOneAndUpdate(
-      //   { _id: req.body.inventoryId },
-      //   {
-      //     $inc: {
-      //       originalQuantity: -inventory._doc.quantityImport,
-      //       currentQuantity: -inventory._doc.quantityImport,
-      //     },
-      //     $pull: { historyImportId: req.params.id },
-      //   }
-      // );
+      if (inventory["quantityImport"] > findInventory["currentQuantity"]) {
+        return res
+          .status(400)
+          .send({ message: "Đã bán sản phẩm trong lần nhập kho này." });
+      }
 
-      // const notification = {
-      //   title: "Delete notification",
-      //   body:
-      //     (req.user?.name || "No name") +
-      //     " delete history import inventory for product with barcode is " +
-      //     inventory["productSKUBarcode"],
-      //   image: "",
-      //   link: "/inventory",
-      //   fromUserId: req.user?._id,
-      //   toUserId: "admin",
-      // };
-      // await notificationController.create(req, notification);
+      await inventory.deleteOne();
 
-      res
-        .status(200)
-        .send({ message: "Xóa lịch sử nhập hàng thành công." });
+      await findInventory.updateOne({
+        $inc: {
+          originalQuantity: -inventory._doc.quantityImport,
+          currentQuantity: -inventory._doc.quantityImport,
+        },
+        $pull: { historyImportId: req.params.id },
+      });
+
+      const notification = {
+        title: "Delete notification",
+        body:
+          (req.user?.name || "No name") +
+          " delete history import inventory for product with barcode is " +
+          inventory["productSKUBarcode"],
+        image: "",
+        link: "/inventory",
+        fromUserId: req.user?._id,
+        toUserId: "admin",
+      };
+      await notificationController.create(req, notification);
+
+      res.status(200).send({ message: "Xóa lịch sử nhập hàng thành công." });
     } catch (err) {
       res.status(500).send(err);
     }
@@ -169,7 +181,12 @@ const inventoryController = {
       const inventory = await Inventory.findById(req.params.id)
         .populate("product")
         .populate("productSKU")
-        .populate("historyImport")
+        .populate({
+          path: "historyImport",
+          options: {
+            sort: { createdAt: -1 },
+          },
+        })
         .then((item) => {
           return {
             ...item._doc,

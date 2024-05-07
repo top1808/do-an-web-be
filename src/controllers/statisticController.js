@@ -1,8 +1,9 @@
+const dayjs = require("dayjs");
 const Category = require("../models/Category");
 const Customer = require("../models/Customer");
 const Order = require("../models/Order");
 const Product = require("../models/Product");
-const notificationController = require("./notificationController");
+const statisticService = require("../services/statisticService");
 
 const statisticController = {
   getStatistic: async (req, res) => {
@@ -20,6 +21,18 @@ const statisticController = {
       };
 
       res.status(200).send({ data });
+    } catch (err) {
+      res.status(500).send(err);
+    }
+  },
+
+  getSaleOfRange: async (req, res) => {
+    try {
+      const query = req.query;
+      const startDate = query?.startDate || "";
+      const endDate = query?.endDate || "";
+      const saleOfDay = await statisticService.getAmountSaleOfDay(dayjs().format("YYYY-MM-DD"));
+      console.log("🚀 ~ getSaleOfRange: ~ saleOfDay:", saleOfDay)
     } catch (err) {
       res.status(500).send(err);
     }
