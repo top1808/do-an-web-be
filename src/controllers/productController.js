@@ -285,6 +285,14 @@ const productController = {
                 status: true,
               }).populate("discountProgram");
               const rate = await productService.getAvarateRate(item._id);
+              let soldQuantityOfProduct = 0;
+              for (let productSKUBarcode of item["productSKUBarcodes"]) {
+                const inventory = await inventoryService.getProductInventory({
+                  productCode: item._id,
+                  productSKUBarcode: productSKUBarcode,
+                });
+                soldQuantityOfProduct += Number(inventory["soldQuantity"]) || 0;
+              }
               if (productDiscounts?.length > 0) {
                 let minPromotionPrice = item._doc.minPrice;
                 let maxPromotionPrice = item._doc.maxPrice;
@@ -307,9 +315,10 @@ const productController = {
                   maxPromotionPrice,
                   discounts,
                   rate,
+                  soldQuantityOfProduct,
                 };
               }
-              return item;
+              return { ...item._doc, rate, soldQuantityOfProduct };
             })
           );
         });
