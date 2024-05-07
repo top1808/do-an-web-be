@@ -2,10 +2,10 @@ const Inventory = require("../models/Inventory");
 
 const inventoryService = {
   getInventories: async (query, offset, limit) => {
-    return await Inventory.find()
+    return await Inventory.find(query)
       .sort({ productCode: 1 })
-      .skip(offset)
-      .limit(limit)
+      // .skip(offset)
+      // .limit(limit)
       .populate("product")
       .populate("productSKU")
       .populate("historyImport")
@@ -20,8 +20,9 @@ const inventoryService = {
         });
       });
   },
-  getTotalInventories: async () => {
-    return await Inventory.find().count();
+  getTotalInventories: async (query) => {
+    console.log("🚀 ~ getTotalInventories: ~ query:", query)
+    return await Inventory.countDocuments(query);
   },
 
   getProductInventory: async (product) => {

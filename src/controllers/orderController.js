@@ -180,6 +180,12 @@ const orderController = {
         reasonCancel: req.body?.reason || "",
       };
 
+      if (customerId && updateFields.status !== "processing") {
+        return res.status(405).send({
+          message: "Bạn không thể hủy đơn hàng. ",
+        });
+      }
+
       const productsNotEnoughQuantity = [];
       const order = await Order.findById(req.params.id).populate("productList");
 
@@ -191,7 +197,7 @@ const orderController = {
       }
 
       if (productsNotEnoughQuantity.length > 0) {
-        return res.status(500).send({
+        return res.status(404).send({
           message: `Những sản phẩm có mã barcode sau không đủ số lượng trong kho: ${productsNotEnoughQuantity
             .reduce((acc, elm) => {
               acc += elm.productSKUBarcode + ", ";
@@ -215,13 +221,16 @@ const orderController = {
       );
 
       if (updateFields.status === "canceled" && order["voucherCode"]) {
-        await Voucher.updateOne({
-          code: order["voucherCode"],
-        }, {
-          $inc: {
-            quantityUsed: -1,
+        await Voucher.updateOne(
+          {
+            code: order["voucherCode"],
+          },
+          {
+            $inc: {
+              quantityUsed: -1,
+            },
           }
-        })
+        );
       }
 
       for (let product of order["productList"]) {
@@ -235,13 +244,15 @@ const orderController = {
               soldQuantity:
                 updateFields.status === "confirmed"
                   ? product["quantity"]
-                  : order["status"] !== "processing" && updateFields.status === "canceled"
+                  : order["status"] !== "processing" &&
+                    updateFields.status === "canceled"
                   ? -product["quantity"]
                   : 0,
               currentQuantity:
                 updateFields.status === "confirmed"
                   ? -product["quantity"]
-                  : order["status"] !== "processing" && updateFields.status === "canceled"
+                  : order["status"] !== "processing" &&
+                    updateFields.status === "canceled"
                   ? product["quantity"]
                   : 0,
             },
