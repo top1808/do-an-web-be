@@ -2,6 +2,7 @@ const Product = require("../models/Product");
 const ProductDiscount = require("../models/ProductDiscount");
 const ProductOrder = require("../models/ProductOrder");
 const Review = require("../models/Review");
+const inventoryService = require("./inventoryService");
 
 const productService = {
   async getAvarateRate(id) {
@@ -21,6 +22,23 @@ const productService = {
     return result[0]?.averageRate || 0;
   },
 
+  async getTotalReview(id) {
+    const result = await Review.aggregate([
+      {
+        $match: {
+          product: id,
+        },
+      },
+      {
+        $group: {
+          _id: "$product",
+          totalReview: { $sum: 1 },
+        },
+      },
+    ]);
+    return result[0]?.totalReview || 0;
+  },
+
   async getProducts(query, skip = 0, limit = 20) {
     return await Product.find(query)
       .skip(skip)
@@ -33,6 +51,16 @@ const productService = {
               status: true,
             }).populate("discountProgram");
             const rate = await productService.getAvarateRate(item._id);
+            const totalReviews = await productService.getTotalReview(item._id);
+
+            let soldQuantityOfProduct = 0;
+            for (let productSKUBarcode of item["productSKUBarcodes"]) {
+              const inventory = await inventoryService.getProductInventory({
+                productCode: item._id,
+                productSKUBarcode: productSKUBarcode,
+              });
+              soldQuantityOfProduct += Number(inventory["soldQuantity"]) || 0;
+            }
             if (productDiscounts?.length > 0) {
               let minPromotionPrice = item._doc.minPrice;
               let maxPromotionPrice = item._doc.maxPrice;
@@ -55,23 +83,25 @@ const productService = {
                 maxPromotionPrice,
                 discounts,
                 rate,
+                soldQuantityOfProduct,
+                totalReviews,
               };
             }
-            return item;
+            return { ...item._doc, rate, soldQuantityOfProduct, totalReviews };
           })
         );
       });
   },
 
   async getSoldProduct() {
-    return await ProductOrder.find().populate("order")
-    .then(data => {
-      return data.map(item => {
-        return item._doc;
-      })
-    })
+    return await ProductOrder.find()
+      .populate("order")
+      .then((data) => {
+        return data.map((item) => {
+          return item._doc;
+        });
+      });
   },
-
 };
 
 module.exports = productService;
