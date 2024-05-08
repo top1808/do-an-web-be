@@ -31,7 +31,14 @@ const inventoryController = {
       );
       const total = await inventoryService.getTotalInventories(myQuery);
 
-      res.status(200).send({ inventories, query });
+      const pagination = {
+        total,
+        offset,
+        limit,
+        page: offset / limit + 1,
+      };
+
+      res.status(200).send({ inventories, params: query, pagination });
     } catch (err) {
       res.status(500).send(err);
     }
