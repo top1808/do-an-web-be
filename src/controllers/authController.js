@@ -155,7 +155,7 @@ const authController = {
       if (findCustomer)
         return res.status(404).send({ message: "Email is exist." });
 
-      const password = req.body?.password ? req.body.password : "123456";
+      const password = req.body?.password ? req.body.password : generateID();
       const salt = await bcrypt.genSalt(10);
       const hashed = await bcrypt.hash(password, salt);
 

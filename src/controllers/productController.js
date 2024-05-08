@@ -54,15 +54,11 @@ const productController = {
           status: true,
         });
         if (productDiscount) {
-          return res
-            .status(405)
-            .send({
-              message: "This product has been included in a discount program",
-            });
+          return res.status(405).send({
+            message: "This product has been included in a discount program",
+          });
         }
       }
-
-      return res.status(500).send("err");
 
       await product.deleteOne();
       await ProductSKU.deleteMany({ productId: req.params.id });
@@ -470,7 +466,6 @@ const productController = {
       res.status(500).send(err);
     }
   },
-
   searchProducts: async (req, res) => {
     try {
       const search = req.params?.search;

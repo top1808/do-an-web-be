@@ -4,8 +4,8 @@ const inventoryService = {
   getInventories: async (query, offset, limit) => {
     return await Inventory.find(query)
       .sort({ productCode: 1 })
-      // .skip(offset)
-      // .limit(limit)
+      .skip(offset)
+      .limit(limit)
       .populate("product")
       .populate("productSKU")
       .populate("historyImport")
