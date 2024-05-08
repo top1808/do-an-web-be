@@ -68,7 +68,7 @@ const productService = {
                 soldQuantityOfProduct,
               };
             }
-            return { ...item._doc, soldQuantityOfProduct };
+            return { ...item._doc, rate, soldQuantityOfProduct };
           })
         );
       });
