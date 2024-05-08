@@ -22,6 +22,23 @@ const productService = {
     return result[0]?.averageRate || 0;
   },
 
+  async getTotalReview(id) {
+    const result = await Review.aggregate([
+      {
+        $match: {
+          product: id,
+        },
+      },
+      {
+        $group: {
+          _id: "$product",
+          totalReview: { $sum: 1 },
+        },
+      },
+    ]);
+    return result[0]?.totalReview || 0;
+  },
+
   async getProducts(query, skip = 0, limit = 20) {
     return await Product.find(query)
       .skip(skip)
@@ -34,6 +51,7 @@ const productService = {
               status: true,
             }).populate("discountProgram");
             const rate = await productService.getAvarateRate(item._id);
+            const totalReviews = await productService.getTotalReview(item._id);
 
             let soldQuantityOfProduct = 0;
             for (let productSKUBarcode of item["productSKUBarcodes"]) {
@@ -66,9 +84,10 @@ const productService = {
                 discounts,
                 rate,
                 soldQuantityOfProduct,
+                totalReviews,
               };
             }
-            return { ...item._doc, rate, soldQuantityOfProduct };
+            return { ...item._doc, rate, soldQuantityOfProduct, totalReviews };
           })
         );
       });

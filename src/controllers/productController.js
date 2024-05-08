@@ -292,56 +292,13 @@ const productController = {
       const query = req.query;
       const skip = query?.skip || 0;
       const limit = query?.limit || 12;
-      const products = await Product.find({
-        status: "active",
-      })
-        .skip(skip)
-        .limit(limit)
-        .then(async (data) => {
-          return await Promise.all(
-            data.map(async (item) => {
-              const productDiscounts = await ProductDiscount.find({
-                productCode: item._id,
-                status: true,
-              }).populate("discountProgram");
-              const rate = await productService.getAvarateRate(item._id);
-              let soldQuantityOfProduct = 0;
-              for (let productSKUBarcode of item["productSKUBarcodes"]) {
-                const inventory = await inventoryService.getProductInventory({
-                  productCode: item._id,
-                  productSKUBarcode: productSKUBarcode,
-                });
-                soldQuantityOfProduct += Number(inventory["soldQuantity"]) || 0;
-              }
-              if (productDiscounts?.length > 0) {
-                let minPromotionPrice = item._doc.minPrice;
-                let maxPromotionPrice = item._doc.maxPrice;
-                const discounts = productDiscounts?.map((elm) => {
-                  if (elm._doc.promotionPrice < minPromotionPrice)
-                    minPromotionPrice = elm._doc.promotionPrice;
-                  if (
-                    elm._doc.price === item._doc.maxPrice &&
-                    elm._doc.promotionPrice < maxPromotionPrice
-                  )
-                    maxPromotionPrice = elm._doc.promotionPrice;
-                  return {
-                    ...elm._doc,
-                    discountProgram: elm["discountProgram"],
-                  };
-                });
-                return {
-                  ...item._doc,
-                  minPromotionPrice,
-                  maxPromotionPrice,
-                  discounts,
-                  rate,
-                  soldQuantityOfProduct,
-                };
-              }
-              return { ...item._doc, rate, soldQuantityOfProduct };
-            })
-          );
-        });
+      const products = await productService.getProducts(
+        {
+          status: "active",
+        },
+        skip,
+        limit
+      );
 
       res.status(200).send({ products });
     } catch (err) {
