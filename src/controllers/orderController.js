@@ -22,7 +22,14 @@ const orderController = {
         .limit(limit);
       const total = await Order.find().count();
 
-      res.status(200).send({ orders, total, offset, limit });
+      const pagination = {
+        total,
+        offset,
+        limit,
+        page: offset / limit + 1,
+      };
+
+      res.status(200).send({ orders, pagination });
     } catch (err) {
       res.status(500).send(err);
     }

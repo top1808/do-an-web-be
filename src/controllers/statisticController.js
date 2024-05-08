@@ -43,9 +43,8 @@ const statisticController = {
           dayjs(date).format("YYYY-MM-DD")
         );
         data.push(saleOfDay);
-        console.log("🚀 ~ getSaleOfRange: ~ saleOfDay:", saleOfDay);
       }
-      res.status(200).send({ data });
+      res.status(200).send({ data, params: query });
     } catch (err) {
       res.status(500).send(err);
     }

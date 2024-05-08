@@ -1,5 +1,6 @@
 const Product = require("../models/Product");
 const ProductDiscount = require("../models/ProductDiscount");
+const ProductOrder = require("../models/ProductOrder");
 const ProductSKU = require("../models/ProductSKU");
 const Review = require("../models/Review");
 const inventoryService = require("../services/inventoryService");
@@ -40,6 +41,29 @@ const productController = {
   delete: async (req, res) => {
     try {
       const product = await Product.findById(req.params.id);
+
+      if (product) {
+        const productOrder = await ProductOrder.findOne({
+          productCode: req.params.id,
+        });
+        if (productOrder) {
+          return res.status(405).send({ message: "Product has been ordered" });
+        }
+        const productDiscount = await ProductDiscount.findOne({
+          productCode: req.params.id,
+          status: true,
+        });
+        if (productDiscount) {
+          return res
+            .status(405)
+            .send({
+              message: "This product has been included in a discount program",
+            });
+        }
+      }
+
+      return res.status(500).send("err");
+
       await product.deleteOne();
       await ProductSKU.deleteMany({ productId: req.params.id });
 

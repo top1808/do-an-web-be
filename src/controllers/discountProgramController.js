@@ -197,7 +197,22 @@ const discountProgramController = {
 
   changeStatus: async (req, res) => {
     try {
-      const discountProgram = await DiscountProgram.findById(req.params.id);
+      const discountProgram = await DiscountProgram.findById(
+        req.params.id
+      ).populate("productList");
+      if (req.body.status === "active") {
+        for (const product of discountProgram["productList"]) {
+          const findProduct = await Product.findById(product.productCode);
+          if (!findProduct) {
+            return res
+              .status(404)
+              .send({
+                message:
+                  "This discount program includes products that has been removed.",
+              });
+          }
+        }
+      }
 
       let status =
         req.body.status === "disable"
