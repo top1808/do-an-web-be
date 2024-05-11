@@ -40,7 +40,7 @@ const cartSchema = new Schema(
   { timestamps: true }
 );
 
-cartSchema.pre("updateOne", async function (done) {
+cartSchema.pre(["updateOne", "findOneAndUpdate"], async function (done) {
   const update = this.getUpdate();
   if (update && update.$set.quantity) {
     const quantity = update.$set.quantity;
