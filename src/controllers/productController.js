@@ -348,14 +348,14 @@ const productController = {
       }
 
 
-      let minPromotionPrice = product._doc.minPrice;
-      let maxPromotionPrice = product._doc.maxPrice;
+      let minPromotionPrice = product.minPrice;
+      let maxPromotionPrice = product.maxPrice;
       if (productDiscounts?.length > 0) {
         productDiscounts?.forEach((elm) => {
           if (elm._doc.promotionPrice < minPromotionPrice)
             minPromotionPrice = elm._doc.promotionPrice;
           if (
-            elm._doc.price === item._doc.maxPrice &&
+            elm._doc.price === product.maxPrice &&
             elm._doc.promotionPrice < maxPromotionPrice
           )
             maxPromotionPrice = elm._doc.promotionPrice;
