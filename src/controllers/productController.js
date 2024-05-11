@@ -347,6 +347,21 @@ const productController = {
         productSKUList.push({ ...productSKU._doc, inventory });
       }
 
+
+      let minPromotionPrice = product._doc.minPrice;
+      let maxPromotionPrice = product._doc.maxPrice;
+      if (productDiscounts?.length > 0) {
+        productDiscounts?.forEach((elm) => {
+          if (elm._doc.promotionPrice < minPromotionPrice)
+            minPromotionPrice = elm._doc.promotionPrice;
+          if (
+            elm._doc.price === item._doc.maxPrice &&
+            elm._doc.promotionPrice < maxPromotionPrice
+          )
+            maxPromotionPrice = elm._doc.promotionPrice;
+        });
+      }
+
       res.status(200).send({
         product: {
           ...product,
@@ -360,6 +375,8 @@ const productController = {
           reviews,
           rate,
           soldQuantityOfProduct,
+          minPromotionPrice,
+          maxPromotionPrice,
         },
       });
     } catch (err) {
