@@ -18,8 +18,16 @@ const formatDateString = (date) => {
   return dayjs(date || new Date()).format("YYYY-MM-DD");
 };
 
+const formatDateStringRender = (date) => {
+  return dayjs(date || new Date()).format("DD/MM/YYYY");
+};
+
 const formatDateTimeString = (date) => {
   return dayjs(date || new Date()).format("YYYY-MM-DD HH:mm");
+};
+
+const formatDateTimeStringRender = (date) => {
+  return dayjs(date || new Date()).format("DD/MM/YYYY HH:mm");
 };
 
 const addElementToArrayUnique = (array = [], element) => {
@@ -43,12 +51,22 @@ const getListDateFromStartToEnd = (startDate, endDate) => {
   return dates;
 };
 
+const customMoney = (money) => {
+	return (money || 0)?.toLocaleString('vi-VN', {
+		style: 'currency',
+		currency: 'VND',
+	});
+};
+
 module.exports = {
   getListDateFromStartToEnd,
   generateID,
   generateBarcode,
   removeDiacriticsFromString,
   formatDateString,
+  formatDateStringRender,
   formatDateTimeString,
   addElementToArrayUnique,
+  formatDateTimeStringRender,
+  customMoney
 };

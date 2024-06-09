@@ -289,16 +289,35 @@ const productController = {
    ******************/
   getProducts: async (req, res) => {
     try {
-      const query = req.query;
-      const skip = query?.skip || 0;
-      const limit = query?.limit || 12;
-      const products = await productService.getProducts(
-        {
-          status: "active",
-        },
-        skip,
-        limit
-      );
+      const skip = req.query?.skip || 0;
+      const limit = req.query?.limit || 12;
+
+      const data = req.body;
+
+      let sort = {}
+      if (data.sortBy) {
+        sort = {
+          [data.sortBy]: data.sortType === "asc" ? 1 : -1,
+        }
+      }
+
+      let query = {
+        status: "active",
+      };
+
+      if (data.rate) {
+        query.rate = { $gte: data.rate };
+      }
+
+      if (data.minPrice) {
+        query.minPrice = { $gte: data.minPrice };
+      }
+
+      if (data.maxPrice) {
+        query.maxPrice = { $lte: data.maxPrice };
+      }
+
+      const products = await productService.getProducts(query, skip, limit, sort);
 
       res.status(200).send({ products });
     } catch (err) {
@@ -368,9 +387,9 @@ const productController = {
           productSKUList,
           discounts: productDiscounts
             ? productDiscounts.map((elm) => ({
-                ...elm._doc,
-                discountProgram: elm["discountProgram"],
-              }))
+              ...elm._doc,
+              discountProgram: elm["discountProgram"],
+            }))
             : [],
           reviews,
           rate,
@@ -386,19 +405,37 @@ const productController = {
 
   getProductByCategory: async (req, res) => {
     try {
-      const query = req.query;
-      const offset = Number(query?.offset) || 0;
-      const limit = Number(query?.limit) || 12;
+      const offset = Number(req.query?.offset) || 0;
+      const limit = Number(req.query?.limit) || 12;
 
-      const products = await productService.getProducts(
-        req.params.categoryId === "all"
-          ? {
-              status: "active",
-            }
-          : { categoryIds: req.params.categoryId, status: "active" },
-        offset,
-        limit
-      );
+      const data = req.body;
+
+      let sort = {}
+      if (data.sortBy) {
+        sort = {
+          [data.sortBy]: data.sortType === "asc" ? 1 : -1,
+        }
+      }
+
+      let query = req.params.categoryId === "all"
+        ? {
+          status: "active",
+        }
+        : { categoryIds: req.params.categoryId, status: "active" }
+
+      if (data.rate) {
+        query.rate = { $gte: data.rate };
+      }
+
+      if (data.minPrice) {
+        query.minPrice = { $gte: data.minPrice };
+      }
+
+      if (data.maxPrice) {
+        query.maxPrice = { $lte: data.maxPrice };
+      }
+
+      const products = await productService.getProducts(query, offset, limit, sort);
 
       let total = 0;
       if (req.params.categoryId === "all") {
@@ -459,6 +496,46 @@ const productController = {
       res.status(500).send(err);
     }
   },
+
+  filterProducts: async (req, res) => {
+    try {
+      const offset = Number(req.query?.offset) || 0;
+      const limit = Number(req.query?.limit) || 12;
+
+      const data = req.body;
+
+      const sort = {
+        [data.sortBy]: data.sortType === "asc" ? 1 : -1,
+      }
+
+      let query = {
+        status: "active",
+      };
+
+      if (data.rate) {
+        query.rate = { $gte: data.rate };
+      }
+
+      if (data.minPrice) {
+        query.minPrice = { $gte: data.minPrice };
+      }
+
+      if (data.maxPrice) {
+        query.maxPrice = { $lte: data.maxPrice };
+      }
+
+      const products = await productService.getProducts(query, offset, limit, sort);
+
+      res.status(200).send({ products });
+    } catch (err) {
+      res.status(500).send(err);
+    }
+  },
+
+  hintSearchProducts: async (req, res) => {
+
+  }
+
 };
 
 module.exports = productController;

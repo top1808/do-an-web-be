@@ -39,8 +39,9 @@ const productService = {
     return result[0]?.totalReview || 0;
   },
 
-  async getProducts(query, skip = 0, limit = 20) {
+  async getProducts(query, skip = 0, limit = 20, sort = { createdAt: -1 }) {
     return await Product.find(query)
+      .sort(sort)
       .skip(skip)
       .limit(limit)
       .then(async (data) => {

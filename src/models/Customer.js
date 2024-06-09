@@ -51,6 +51,14 @@ const customerSchema = new mongoose.Schema(
     },
     lastLogin: {
       type: String,
+    },
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    status: {
+      type: String,
+      default: "inactive",
     }
   },
   { timestamps: true }
