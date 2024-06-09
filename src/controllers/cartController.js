@@ -7,6 +7,9 @@ const ProductOrder = require("../models/ProductOrder");
 const ProductDiscount = require("../models/ProductDiscount");
 const Product = require("../models/Product");
 const inventoryService = require("../services/inventoryService");
+const { sendEmail } = require("../config/nodemailer");
+const NewOrderTemplate = require("../templates/email/NewOrderEmail.template");
+const { PAYMENT_METHOD } = require("../utils/constant");
 
 const cartController = {
   getCart: async (req, res) => {
@@ -207,15 +210,12 @@ const cartController = {
           const inventory = await inventoryService.checkProductInventory(item);
           if (!inventory.status)
             return res.status(404).send({
-              message: `Số lượng sản phẩm ${item.productName} - ${
-                item.options?.[0]?.groupName
-              }: ${item.options?.[0]?.option}${
-                item.options?.[1]
-                  ? `, ${item.options?.[1]?.groupName || ""}: ${
-                      item.options?.[1]?.option || ""
-                    }`
+              message: `Số lượng sản phẩm ${item.productName} - ${item.options?.[0]?.groupName
+                }: ${item.options?.[0]?.option}${item.options?.[1]
+                  ? `, ${item.options?.[1]?.groupName || ""}: ${item.options?.[1]?.option || ""
+                  }`
                   : ""
-              } trong kho không đủ`,
+                } trong kho không đủ`,
             });
 
           const findProductImage = await Product.findOne({
@@ -275,6 +275,19 @@ const cartController = {
 
         const productsDelete = data.products.map((p) => p.cartId);
         await Cart.deleteMany({ _id: { $in: productsDelete } });
+
+        const dataEmail = {
+          ...newOrder._doc,
+          paymentMethod: PAYMENT_METHOD[newOrder._doc.paymentMethod],
+          products: data?.products
+        }
+
+        await sendEmail({
+          to: {
+            name: dataEmail.customerName,
+            email: dataEmail.customerEmail,
+          }, subject: "Đơn hàng mới", html: NewOrderTemplate(dataEmail)
+        })
 
         return res
           .status(200)

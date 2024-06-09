@@ -1,3 +1,4 @@
+const { sendEmail } = require("../config/nodemailer");
 const Inventory = require("../models/Inventory");
 const Order = require("../models/Order");
 const Product = require("../models/Product");
@@ -5,6 +6,8 @@ const ProductOrder = require("../models/ProductOrder");
 const Voucher = require("../models/Voucher");
 const inventoryService = require("../services/inventoryService");
 const orderService = require("../services/orderService");
+const ConfirmOrderTemplate = require("../templates/email/ConfirmOrderEmail.template");
+const { PAYMENT_METHOD } = require("../utils/constant");
 const { generateID } = require("../utils/functionHelper");
 const notificationController = require("./notificationController");
 
@@ -188,6 +191,20 @@ const orderController = {
       const productsNotEnoughQuantity = [];
       const order = await Order.findById(req.params.id).populate("productList");
 
+      if (order._doc.status === "received") {
+        return res.status(400).send({ message: "Đơn hàng này đã hoàn thành." })
+      }
+
+      const dataEmail = {
+        ...order._doc,
+        ...updateFields,
+        paymentMethod: PAYMENT_METHOD[order._doc.paymentMethod],
+        products: order["productList"],
+        deliveryDate: order?._doc?.deliveryDate || updateFields?.deliveryDate
+      }
+
+      await orderService.sendOrderEmail(updateFields.status, dataEmail)
+
       if (updateFields.status === "confirmed") {
         for (let product of order["productList"]) {
           const result = await orderService.handleMultipleRequest(product, res);
@@ -245,15 +262,15 @@ const orderController = {
                   ? product["quantity"]
                   : order["status"] !== "processing" &&
                     updateFields.status === "canceled"
-                  ? -product["quantity"]
-                  : 0,
+                    ? -product["quantity"]
+                    : 0,
               currentQuantity:
                 updateFields.status === "confirmed"
                   ? -product["quantity"]
                   : order["status"] !== "processing" &&
                     updateFields.status === "canceled"
-                  ? product["quantity"]
-                  : 0,
+                    ? product["quantity"]
+                    : 0,
             },
           }
         );
@@ -307,7 +324,6 @@ const orderController = {
       const query = req.query;
       const offset = Number(query?.offset) || 0;
       const limit = Number(query?.limit) || 20;
-      const status = query?.status || "all";
 
       const orders = await Order.find({ customerCode: customerId })
         .skip(offset)
@@ -357,6 +373,14 @@ const orderController = {
 
       const productsNotEnoughQuantity = [];
       const order = await Order.findById(req.params.id).populate("productList");
+
+      const dataEmail = {
+        ...order._doc,
+        paymentMethod: PAYMENT_METHOD[order._doc.paymentMethod],
+        products: order["productList"],
+      }
+
+      await orderService.sendOrderEmail(updateFields.status, dataEmail)
 
       if (
         customerId &&
@@ -421,15 +445,15 @@ const orderController = {
                   ? product["quantity"]
                   : order["status"] !== "processing" &&
                     updateFields.status === "canceled"
-                  ? -product["quantity"]
-                  : 0,
+                    ? -product["quantity"]
+                    : 0,
               currentQuantity:
                 updateFields.status === "confirmed"
                   ? -product["quantity"]
                   : order["status"] !== "processing" &&
                     updateFields.status === "canceled"
-                  ? product["quantity"]
-                  : 0,
+                    ? product["quantity"]
+                    : 0,
             },
           }
         );

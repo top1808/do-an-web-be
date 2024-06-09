@@ -5,6 +5,9 @@ const RefreshToken = require("../models/RefreshToken");
 const Role = require("../models/Role");
 const Customer = require("../models/Customer");
 const { generateID, formatDateTimeString } = require("../utils/functionHelper");
+const authService = require("../services/authService");
+const { sendEmail } = require("../config/nodemailer");
+const VerifyLoginEmailTemplate = require("../templates/email/VerifyLoginEmail.template");
 
 const authController = {
   //GENERATE TOKEN
@@ -164,10 +167,21 @@ const authController = {
         name: req.body?.name || "No name",
         password: hashed,
         id: req.body?.id ? req.body.id : generateID(),
+        isVerified: !req.body.password
       });
       await newCustomer.save();
 
-      res.status(200).send({ message: "Register successfully." });
+      const verificationUrl = await authService.createVerifyEmailUrl(newCustomer);
+
+      const emailContent = VerifyLoginEmailTemplate({
+        url: verificationUrl,
+      });
+
+      await sendEmail({
+        to: newCustomer, subject: "Xác thực tài khoản email", html: emailContent
+      });
+
+      res.status(200).send({ message: "Please check your email to verify your account." });
     } catch (err) {
       res.status(500).send({ err });
     }
@@ -177,7 +191,7 @@ const authController = {
     try {
       const customer = await Customer.findOne({ email: req.body.email });
       if (!customer) {
-        return res.status(404).send({ message: "Email is wrong." });
+        return res.status(404).send({ message: "Email chưa tồn tại." });
       }
 
       const checkPass = await bcrypt.compare(
@@ -185,7 +199,11 @@ const authController = {
         customer.password
       );
       if (!checkPass) {
-        return res.status(404).send({ message: "Password is wrong." });
+        return res.status(404).send({ message: "Sai mật khẩu." });
+      }
+
+      if (!customer.isVerified) {
+        return res.status(404).send({ message: "Tài khoản chưa được kích hoạt, vui lòng kiểm tra hộp thư email." });
       }
 
       const { password, username, ...rest } = customer._doc;
@@ -249,6 +267,26 @@ const authController = {
     } catch (err) {
       res.status(500).send(err);
     }
+  },
+
+  verifyTokenEmail: async (req, res) => {
+    try {
+      const token = req.params.token;
+      const checkToken = await authService.checkToken(token);
+
+      if (!checkToken) {
+        return res.status(400).send({ message: "Invalid token." });
+      }
+
+      await Customer.updateOne({ email: checkToken.email }, { isVerified: true });
+
+      res
+        .status(200)
+        .send({ message: "Verify Token successfully." });
+    } catch (err) {
+      res.status(500).send(err);
+    }
+
   },
 };
 
