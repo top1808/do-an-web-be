@@ -168,7 +168,7 @@ const authController = {
         name: req.body?.name || "No name",
         password: hashed,
         id: req.body?.id ? req.body.id : generateID(),
-        isVerified: !req.body.password
+        isVerified: !!req.body?.id
       });
       await newCustomer.save();
 
@@ -192,7 +192,7 @@ const authController = {
     try {
       const customer = await Customer.findOne({ email: req.body.email });
       if (!customer) {
-        return res.status(404).send({ message: "Email chưa tồn tại." });
+        return res.status(404).send({ message: "email_not_found" });
       }
 
       const checkPass = await bcrypt.compare(
@@ -200,11 +200,11 @@ const authController = {
         customer.password
       );
       if (!checkPass) {
-        return res.status(404).send({ message: "Sai mật khẩu." });
+        return res.status(404).send({ message: "password_wrong" });
       }
 
-      if (!customer.isVerified) {
-        return res.status(404).send({ message: "Tài khoản chưa được kích hoạt, vui lòng kiểm tra hộp thư email." });
+      if (!customer?.isVerified) {
+        return res.status(404).send({ message: "email_is_not_verified" });
       }
 
       const { password, username, ...rest } = customer._doc;
@@ -229,7 +229,7 @@ const authController = {
       if (!customer)
         return res.status(404).send({ message: "Customer not found." });
 
-      const { password, ...rest } = customer._doc;
+      const { password } = customer._doc;
 
       const checkPass = await bcrypt.compare(req.body.password, password);
 
