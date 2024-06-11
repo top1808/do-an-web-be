@@ -405,8 +405,6 @@ const productController = {
 
   getProductByCategory: async (req, res) => {
     try {
-     
-
       const data = req.query;
 
       const offset = Number(data?.offset) || 0;
