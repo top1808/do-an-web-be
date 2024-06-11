@@ -405,10 +405,12 @@ const productController = {
 
   getProductByCategory: async (req, res) => {
     try {
-      const offset = Number(req.query?.offset) || 0;
-      const limit = Number(req.query?.limit) || 12;
+     
 
-      const data = req.body;
+      const data = req.query;
+
+      const offset = Number(data?.offset) || 0;
+      const limit = Number(data?.limit) || 12;
 
       let sort = {}
       if (data.sortBy) {
