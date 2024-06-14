@@ -423,7 +423,6 @@ const productController = {
         ...(data?.minPrice ? { minPrice: { $gte: Number(data.minPrice) } } : {}),
         ...(Number(data?.maxPrice) > 0 ? { maxPrice: { $lte: Number(data.maxPrice) } } : {}),
       };
-      console.log("🚀 ~ getProductByCategory: ~ query:", query)
 
       const products = await productService.getProducts(query, offset, limit, sort);
 
