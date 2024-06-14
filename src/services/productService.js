@@ -44,8 +44,8 @@ const productService = {
       .sort(sort)
       .skip(skip)
       .limit(limit)
-      .then(async (data) => {
-        return await Promise.all(
+      .then((data) => {
+        return Promise.all(
           data.map(async (item) => {
             const productDiscounts = await ProductDiscount.find({
               productCode: item._id,

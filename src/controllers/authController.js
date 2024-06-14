@@ -192,7 +192,7 @@ const authController = {
     try {
       const customer = await Customer.findOne({ email: req.body.email });
       if (!customer) {
-        return res.status(404).send({ message: "email_not_found" });
+        return res.status(404).send({ message: "EmailNotFound" });
       }
 
       const checkPass = await bcrypt.compare(
@@ -200,11 +200,11 @@ const authController = {
         customer.password
       );
       if (!checkPass) {
-        return res.status(404).send({ message: "password_wrong" });
+        return res.status(404).send({ message: "PasswordWrong" });
       }
 
       if (!customer?.isVerified) {
-        return res.status(404).send({ message: "email_is_not_verified" });
+        return res.status(404).send({ message: "EmailNotVerified" });
       }
 
       const { password, username, ...rest } = customer._doc;

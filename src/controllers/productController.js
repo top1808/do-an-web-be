@@ -417,35 +417,26 @@ const productController = {
         }
       }
 
-      let query = req.params.categoryId === "all"
-        ? {
-          status: "active",
-        }
-        : { categoryIds: req.params.categoryId, status: "active" }
-
-      if (data.rate) {
-        query.rate = { $gte: data.rate };
-      }
-
-      if (data.minPrice) {
-        query.minPrice = { $gte: data.minPrice };
-      }
-
-      if (data.maxPrice) {
-        query.maxPrice = { $lte: data.maxPrice };
-      }
+      const query = {
+        ...(req.params.categoryId === "all" ? {} : { categoryIds: {$in: [req.params.categoryId]} }),
+        status: "active",
+        ...(data?.minPrice ? { minPrice: { $gte: Number(data.minPrice) } } : {}),
+        ...(Number(data?.maxPrice) > 0 ? { maxPrice: { $lte: Number(data.maxPrice) } } : {}),
+      };
+      console.log("🚀 ~ getProductByCategory: ~ query:", query)
 
       const products = await productService.getProducts(query, offset, limit, sort);
 
       let total = 0;
       if (req.params.categoryId === "all") {
-        total = await Product.countDocuments({ status: "active" });
+        total = await Product.countDocuments(query);
       } else {
         total = await Product.countDocuments({
-          categoryIds: req.params.categoryId,
-          status: "active",
+          ...query
         });
       }
+
+      const newProducts = products?.filter((elm) => Number(elm.rate) >= Number(data.rate));
 
       const pagination = {
         total,
@@ -454,7 +445,7 @@ const productController = {
         page: offset / limit + 1,
       };
 
-      res.status(200).send({ products, pagination });
+      res.status(200).send({ products: newProducts, pagination });
     } catch (err) {
       res.status(500).send(err);
     }
@@ -481,17 +472,32 @@ const productController = {
     try {
       const search = req.params?.search;
 
-      let query = {
-        status: "active",
-      };
+      const data = req.query;
 
-      if (search.trim() !== "") {
-        query.name = { $regex: new RegExp(search, "i") };
+      const offset = Number(data?.offset) || 0;
+      const limit = Number(data?.limit) || 12;
+
+      let sort = {}
+      if (data.sortBy) {
+        sort = {
+          [data.sortBy]: data.sortType === "asc" ? 1 : -1,
+        }
       }
 
-      const products = await productService.getProducts(query);
+      const query = {
+        status: "active",
+        ...(data?.minPrice ? { minPrice: { $gte: Number(data.minPrice) } } : {}),
+        ...(Number(data?.maxPrice) > 0 ? { maxPrice: { $lte: Number(data.maxPrice) } } : {}),
+        ...(search?.trim() ? { name: { $regex: new RegExp(search, "i") } } : {}),
+      };
 
-      res.status(200).send({ products });
+      const products = await productService.getProducts(query, offset, 100, sort);
+
+      const newProducts = products?.filter((elm) => Number(elm.rate) >= Number(data.rate));
+
+      // const total = await Product.countDocuments(query);
+
+      res.status(200).send({ products: newProducts });
     } catch (err) {
       res.status(500).send(err);
     }
