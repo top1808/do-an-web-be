@@ -52,11 +52,37 @@ const getListDateFromStartToEnd = (startDate, endDate) => {
 };
 
 const customMoney = (money) => {
-	return (money || 0)?.toLocaleString('vi-VN', {
-		style: 'currency',
-		currency: 'VND',
-	});
+  return (money || 0)?.toLocaleString('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+  });
 };
+
+const convertCharacterToEnglish = (str) => {
+  const from = "àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ",
+    to = "aaaaaaaaaaaaaaaaaeeeeeeeeeeiiiiiooooooooooooooooouuuuuuuuuuuuyyyyyd";
+
+  for (let i = 0, l = from.length; i < l; i++) {
+    str = str.replace(RegExp(from[i], 'gi'), to[i]);
+  }
+  return str;
+}
+
+const stringToSlug = (str) => {
+  const from = "àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ",
+    to = "aaaaaaaaaaaaaaaaaeeeeeeeeeeiiiiiooooooooooooooooouuuuuuuuuuuuyyyyyd";
+
+  for (let i = 0, l = from.length; i < l; i++) {
+    str = str.replace(RegExp(from[i], 'gi'), to[i]);
+  }
+
+  str = str.toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\-]/g, '-')
+    .replace(/-+/g, '-');
+
+  return str;
+}
 
 module.exports = {
   getListDateFromStartToEnd,
@@ -68,5 +94,7 @@ module.exports = {
   formatDateTimeString,
   addElementToArrayUnique,
   formatDateTimeStringRender,
-  customMoney
+  customMoney,
+  stringToSlug,
+  convertCharacterToEnglish,
 };

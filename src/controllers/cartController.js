@@ -215,7 +215,7 @@ const cartController = {
                   ? `, ${item.options?.[1]?.groupName || ""}: ${item.options?.[1]?.option || ""
                   }`
                   : ""
-                } trong kho không đủ`,
+                } trong kho chỉ còn ${inventory.inventory.currentQuantity} cái.`,
             });
 
           const findProductImage = await Product.findOne({
