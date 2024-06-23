@@ -36,6 +36,30 @@ const customerSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    province: {
+      value: {
+        type: Number,
+      },
+      label: {
+        type: String,
+      },
+    },
+    district: {
+      value: {
+        type: Number,
+      },
+      label: {
+        type: String,
+      },
+    },
+    ward: {
+      value: {
+        type: Number,
+      },
+      label: {
+        type: String,
+      },
+    },
     address: {
       type: String,
       default: "",
