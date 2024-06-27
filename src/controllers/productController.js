@@ -5,7 +5,7 @@ const ProductSKU = require("../models/ProductSKU");
 const Review = require("../models/Review");
 const inventoryService = require("../services/inventoryService");
 const productService = require("../services/productService");
-const { generateBarcode, convertCharacterToEnglish } = require("../utils/functionHelper");
+const { generateBarcode, stringToSlug } = require("../utils/functionHelper");
 const notificationController = require("./notificationController");
 
 const productController = {
@@ -487,7 +487,7 @@ const productController = {
         status: "active",
         ...(data?.minPrice ? { minPrice: { $gte: Number(data.minPrice) } } : {}),
         ...(Number(data?.maxPrice) > 0 ? { maxPrice: { $lte: Number(data.maxPrice) } } : {}),
-        ...(search?.trim() ? { slug: { $regex: new RegExp(convertCharacterToEnglish(search), "i") } } : {}),
+        ...(search?.trim() ? { slug: { $regex: new RegExp(stringToSlug(search), "i") } } : {}),
       };
 
       const products = await productService.getProducts(query, offset, 100, sort);
