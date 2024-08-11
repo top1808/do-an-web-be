@@ -10,11 +10,15 @@ const inventoryService = require("../services/inventoryService");
 const { sendEmail } = require("../config/nodemailer");
 const NewOrderTemplate = require("../templates/email/NewOrderEmail.template");
 const { PAYMENT_METHOD } = require("../utils/constant");
+const requestIp = require('request-ip');
+const Inventory = require("../models/Inventory");
 
 const cartController = {
   getCart: async (req, res) => {
     try {
-      const customerId = await req.header("userId");
+      let customerId = await req.header("userId");
+      const clientIp = requestIp.getClientIp(req);
+      customerId = customerId || clientIp;
       const carts = await Cart.find({ customerId: customerId })
         .populate("product")
         .populate("productSKU")
@@ -53,7 +57,9 @@ const cartController = {
   },
   addToCart: async (req, res) => {
     try {
-      const customerId = await req.header("userId");
+      let customerId = await req.header("userId");
+      const clientIp = requestIp.getClientIp(req);
+      customerId = customerId || clientIp;
       if (customerId) {
         const data = {
           customerId: customerId,
@@ -182,7 +188,9 @@ const cartController = {
 
   clearAll: async (req, res) => {
     try {
-      const customerId = await req.header("userId");
+      let customerId = await req.header("userId");
+      const clientIp = requestIp.getClientIp(req);
+      customerId = customerId || clientIp;
       if (customerId) {
         await Cart.deleteMany({ customerId: customerId });
         return res
@@ -198,12 +206,13 @@ const cartController = {
 
   pay: async (req, res) => {
     try {
-      const customerId = await req.header("userId");
+      let customerId = await req.header("userId");
+      const clientIp = requestIp.getClientIp(req);
+      customerId = customerId || clientIp;
       if (customerId) {
         const orderCode = generateID();
 
         const data = req.body;
-
         let productOrderIds = [];
 
         for (let item of data?.products) {
@@ -236,7 +245,7 @@ const cartController = {
           products: productOrderIds,
           customerCode: customerId,
           orderCode: orderCode,
-          status: "processing",
+          status: data.paymentMethod === "vnpay" ? "confirmed" : "processing",
           deliveryDate: "",
           voucherCode: data.voucher?.code || "",
           voucherDiscount: data.voucher?.discountValue || 0,
@@ -247,6 +256,17 @@ const cartController = {
         });
 
         const order = await newOrder.save();
+        if (data.paymentMethod === "vnpay") {
+          for (let item of data?.products) {
+            await Inventory.updateOne(
+              {
+                productSKUBarcode: item.productSKUBarcode,
+              },{
+                $inc: { currentQuantity: -item.quantity, soldQuantity: item.quantity },
+              }
+            )
+          }
+        }
 
         const notification = {
           title: "New Order",
